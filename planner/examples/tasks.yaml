@@ -1,0 +1,74 @@
+tasks:
+  - name: Draft architecture
+    start date: 2026-04-01
+    due date: 2026-05-05
+    expected duration: 2
+    milestone: Design
+    priority: high
+    risk level: medium
+    risk type: scope
+    risk mitigation: Review the architecture with stakeholders before implementation starts.
+    status: done
+    description: Produce the first architecture draft for the planner.
+    project: Planning System
+    dependencies: []
+
+  - name: Define task schema
+    start_date: 2026-05-01
+    due_date: 2026-05-07
+    expected_duration: 1
+    milestone: Design
+    priority: high
+    risk_level: low
+    risk_type: requirements
+    risk_mitigation: Document field aliases and validate examples against the schema.
+    status: done
+    description: Lock down the required task attributes and field aliases.
+    project: Planning System
+    dependencies:
+      - Draft architecture
+
+  - name: Build loader
+    start_date: 2026-05-01
+    due_date: 2026-05-12
+    expected_duration: 1
+    milestone: Implementation
+    priority: high
+    risk_level: medium
+    risk_type: integration
+    risk_mitigation: Add schema validation tests for both YAML and Python task sources.
+    status: in_progress
+    description: Load and validate tasks from YAML and Python files.
+    project: Planning System
+    dependencies:
+      - Define task schema
+
+  - name: Add CLI
+    start_date: 2026-05-01
+    due_date: 2026-05-14
+    expected_duration: 1
+    milestone: Implementation
+    priority: medium
+    risk_level: low
+    risk_type: usability
+    risk_mitigation: Keep output formats stable and document the new fields in examples.
+    status: todo
+    description: Provide validate, list, and summary commands.
+    project: Planning System
+    dependencies:
+      - Build loader
+
+  - name: Add schedule view
+    start_date: 2026-05-01
+    due_date: 2026-05-16
+    expected_duration: 1
+    milestone: Implementation
+    priority: medium
+    risk_level: low
+    risk_type: sequencing
+    risk_mitigation: Verify dependency ordering with cycle and readiness tests.
+    status: todo
+    description: Show tasks in dependency order with readiness states.
+    project: Planning System
+    dependencies:
+      - Add CLI
