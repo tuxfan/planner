@@ -36,7 +36,7 @@ You can also install it locally:
 
 ```bash
 python3 -m pip install -e .
-project-planner list planner/examples/tasks.yaml
+tuxfan-planner list planner/examples/tasks.yaml
 ```
 
 ## YAML format

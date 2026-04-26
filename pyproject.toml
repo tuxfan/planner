@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "project-planner"
+name = "tuxfan-planner"
 version = "0.1.0"
 description = "Simple text-driven project planning system"
 readme = "README.md"
@@ -11,8 +11,7 @@ requires-python = ">=3.11"
 dependencies = ["PyYAML>=6.0"]
 
 [project.scripts]
-project-planner = "planner.cli:main"
+tuxfan-planner = "planner.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["planner*"]
-
