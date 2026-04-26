@@ -4,20 +4,20 @@ A small planning system that lets you define tasks in either YAML or Python.
 
 Each task supports these fields:
 
-- `id`
-- `label`
-- `start`
-- `deadline`
-- `expected duration` or `expected_duration` in months
-- `milestone`
-- `priority`
-- `risk level` or `risk_level`
-- `risk type` or `risk_type`
-- `risk mitigation` or `risk_mitigation`
-- `status`
-- `description`
-- `project`
-- `dependencies` as a list of task ids
+- `id`: required string task id. Must be alphanumeric only, with no spaces.
+- `label`: required string display name for the task.
+- `start`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
+- `deadline`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
+- `expected duration` or `expected_duration`: required positive whole number of months.
+- `milestone`: required string milestone name.
+- `priority`: required string priority label such as `low`, `medium`, or `high`.
+- `risk level` or `risk_level`: required string risk severity label such as `low`, `medium`, `high`, or `extreme`.
+- `risk type` or `risk_type`: required string risk category.
+- `risk mitigation` or `risk_mitigation`: required string describing how the risk will be mitigated.
+- `status`: required string status. Allowed values are `pending`, `in-progress`, `blocked`, and `complete`.
+- `description`: required string describing the task.
+- `project`: required string project name.
+- `dependencies`: required list of task ids. Each dependency must reference another task `id`.
 
 ## Quick start
 
@@ -55,7 +55,7 @@ tasks:
     risk level: medium
     risk type: scope
     risk mitigation: Review the architecture with stakeholders before implementation starts.
-    status: done
+    status: complete
     description: Produce the first architecture draft.
     project: Planning System
     dependencies: []
@@ -70,7 +70,7 @@ tasks:
     risk_level: medium
     risk_type: integration
     risk_mitigation: Add schema validation tests for both YAML and Python task sources.
-    status: todo
+    status: pending
     description: Load task definitions from YAML and Python files.
     project: Planning System
     dependencies:
@@ -94,7 +94,7 @@ TASKS = [
         "risk_level": "medium",
         "risk_type": "scope",
         "risk_mitigation": "Review the architecture with stakeholders before implementation starts.",
-        "status": "done",
+        "status": "complete",
         "description": "Produce the first architecture draft.",
         "project": "Planning System",
         "dependencies": [],
@@ -106,9 +106,10 @@ TASKS = [
 
 Use one of:
 
-- `todo`
-- `in_progress`
-- `done`
+- `pending`
+- `in-progress`
+- `blocked`
+- `complete`
 
 ## Fiscal period values
 

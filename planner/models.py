@@ -116,10 +116,10 @@ class Task:
             raise ValidationError(f"Task '{label}' has start after deadline.")
 
         status = str(normalized["status"]).strip().lower()
-        if status not in {"todo", "in_progress", "done"}:
+        if status not in {"pending", "in-progress", "blocked", "complete"}:
             raise ValidationError(
                 f"Task '{label}' has invalid status '{normalized['status']}'. "
-                "Use todo, in_progress, or done."
+                "Use pending, in-progress, blocked, or complete."
             )
 
         return cls(
@@ -264,10 +264,12 @@ def build_schedule(tasks: Iterable[Task]) -> list[tuple[int, str, Task]]:
 
 
 def _schedule_state(task: Task, task_map: dict[str, Task]) -> str:
-    if task.status == "done":
+    if task.status == "complete":
         return "COMPLETE"
-    if task.status == "in_progress":
+    if task.status == "in-progress":
         return "ACTIVE"
-    if all(task_map[dependency].status == "done" for dependency in task.dependencies):
+    if task.status == "blocked":
+        return "BLOCKED"
+    if all(task_map[dependency].status == "complete" for dependency in task.dependencies):
         return "READY"
     return "BLOCKED"
