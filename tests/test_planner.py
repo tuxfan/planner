@@ -19,7 +19,8 @@ class PlannerTests(unittest.TestCase):
                 textwrap.dedent(
                     """
                     tasks:
-                      - name: A
+                      - id: A1
+                        label: A
                         start date: 2026-04-01
                         due date: 2026-06-01
                         expected duration: 2
@@ -32,7 +33,8 @@ class PlannerTests(unittest.TestCase):
                         description: First task.
                         project: Demo
                         dependencies: []
-                      - name: B
+                      - id: B2
+                        label: B
                         start_date: 2026-05-01
                         due_date: 2026-06-02
                         expected_duration: 1
@@ -44,7 +46,7 @@ class PlannerTests(unittest.TestCase):
                         status: todo
                         description: Second task.
                         project: Demo
-                        dependencies: [A]
+                        dependencies: [A1]
                     """
                 ),
                 encoding="utf-8",
@@ -52,7 +54,8 @@ class PlannerTests(unittest.TestCase):
 
             tasks = load_tasks(path)
 
-        self.assertEqual([task.name for task in tasks], ["A", "B"])
+        self.assertEqual([task.label for task in tasks], ["A", "B"])
+        self.assertEqual([task.id for task in tasks], ["A1", "B2"])
         self.assertEqual(tasks[0].start_date.isoformat(), "2026-04-01")
         self.assertEqual(tasks[0].expected_duration, 2)
         self.assertEqual(tasks[0].risk_type, "dependency")
@@ -67,7 +70,8 @@ class PlannerTests(unittest.TestCase):
             path.write_text(
                 textwrap.dedent(
                     """
-                    - name: A
+                    - id: A1
+                      label: A
                       start_date: 2026-05-01
                       due_date: 2026-06-01
                       expected_duration: 1
@@ -88,6 +92,77 @@ class PlannerTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 load_tasks(path)
 
+    def test_rejects_invalid_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: bad id
+                      label: A
+                      start_date: 2026-05-01
+                      due_date: 2026-06-01
+                      expected_duration: 1
+                      milestone: Build
+                      priority: high
+                      risk_level: low
+                      risk_type: dependency
+                      risk_mitigation: Use a compact identifier for dependency tracking.
+                      status: todo
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_tasks(path)
+
+    def test_rejects_duplicate_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: A
+                        start_date: 2026-05-01
+                        due_date: 2026-06-01
+                        expected_duration: 1
+                        milestone: Build
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep ids unique.
+                        status: todo
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                      - id: A1
+                        label: B
+                        start_date: 2026-05-01
+                        due_date: 2026-06-02
+                        expected_duration: 1
+                        milestone: Build
+                        priority: medium
+                        risk_level: medium
+                        risk_type: delivery
+                        risk_mitigation: Keep ids unique.
+                        status: todo
+                        description: Second task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_tasks(path)
+
     def test_rejects_dependency_cycle(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "tasks.py"
@@ -96,7 +171,8 @@ class PlannerTests(unittest.TestCase):
                     """
                     TASKS = [
                         {
-                            "name": "A",
+                            "id": "A1",
+                            "label": "A",
                             "start_date": "2026-05-01",
                             "due_date": "2026-06-01",
                             "expected_duration": 1,
@@ -108,10 +184,11 @@ class PlannerTests(unittest.TestCase):
                             "status": "todo",
                             "description": "First task.",
                             "project": "Demo",
-                            "dependencies": ["B"],
+                            "dependencies": ["B2"],
                         },
                         {
-                            "name": "B",
+                            "id": "B2",
+                            "label": "B",
                             "start_date": "2026-05-01",
                             "due_date": "2026-06-02",
                             "expected_duration": 1,
@@ -123,7 +200,7 @@ class PlannerTests(unittest.TestCase):
                             "status": "todo",
                             "description": "Second task.",
                             "project": "Demo",
-                            "dependencies": ["A"],
+                            "dependencies": ["A1"],
                         },
                     ]
                     """
@@ -140,7 +217,8 @@ class PlannerTests(unittest.TestCase):
             path.write_text(
                 textwrap.dedent(
                     """
-                    - name: A
+                    - id: A1
+                      label: A
                       start_date: 2026-05-01
                       due_date: 2026-06-01
                       expected_duration: 1
@@ -167,7 +245,8 @@ class PlannerTests(unittest.TestCase):
             path.write_text(
                 textwrap.dedent(
                     """
-                    - name: A
+                    - id: A1
+                      label: A
                       start_date: 2026-05-01
                       due_date: 2026-06-01
                       expected_duration: 0
@@ -195,7 +274,8 @@ class PlannerTests(unittest.TestCase):
                 textwrap.dedent(
                     """
                     tasks:
-                      - name: A
+                      - id: A1
+                        label: A
                         start_date: 2026-05-01
                         due_date: 2026-06-01
                         expected_duration: 1
@@ -208,7 +288,8 @@ class PlannerTests(unittest.TestCase):
                         description: First task.
                         project: Demo
                         dependencies: []
-                      - name: B
+                      - id: B2
+                        label: B
                         start_date: 2026-05-01
                         due_date: 2026-06-02
                         expected_duration: 1
@@ -220,8 +301,9 @@ class PlannerTests(unittest.TestCase):
                         status: in_progress
                         description: Second task.
                         project: Demo
-                        dependencies: [A]
-                      - name: C
+                        dependencies: [A1]
+                      - id: C3
+                        label: C
                         start_date: 2026-05-01
                         due_date: 2026-06-03
                         expected_duration: 1
@@ -233,7 +315,7 @@ class PlannerTests(unittest.TestCase):
                         status: todo
                         description: Third task.
                         project: Demo
-                        dependencies: [B]
+                        dependencies: [B2]
                     """
                 ),
                 encoding="utf-8",
@@ -242,7 +324,7 @@ class PlannerTests(unittest.TestCase):
             schedule = build_schedule(load_tasks(path))
 
         self.assertEqual(
-            [(step, state, task.name) for step, state, task in schedule],
+            [(step, state, task.label) for step, state, task in schedule],
             [(1, "COMPLETE", "A"), (2, "ACTIVE", "B"), (3, "BLOCKED", "C")],
         )
 
@@ -253,7 +335,8 @@ class PlannerTests(unittest.TestCase):
                 textwrap.dedent(
                     """
                     tasks:
-                      - name: A
+                      - id: A1
+                        label: A
                         start_date: 2026-04-01
                         due_date: 2026-06-01
                         expected_duration: 2
@@ -292,7 +375,8 @@ class PlannerTests(unittest.TestCase):
                 textwrap.dedent(
                     """
                     tasks:
-                      - name: A
+                      - id: A1
+                        label: A
                         start_date: 2026-04-01
                         due_date: 2026-06-01
                         expected_duration: 2
@@ -305,7 +389,8 @@ class PlannerTests(unittest.TestCase):
                         description: First task.
                         project: Demo
                         dependencies: []
-                      - name: B
+                      - id: B2
+                        label: B
                         start_date: 2026-05-01
                         due_date: 2026-06-02
                         expected_duration: 1
@@ -317,7 +402,7 @@ class PlannerTests(unittest.TestCase):
                         status: todo
                         description: Second task.
                         project: Demo
-                        dependencies: [A]
+                        dependencies: [A1]
                     """
                 ),
                 encoding="utf-8",
@@ -334,6 +419,7 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("duration 1 month(s)", svg)
         self.assertIn("risk high/delivery", svg)
         self.assertIn("marker-end=\"url(#arrow)\"", svg)
+        self.assertIn("id B2", svg)
 
 
 if __name__ == "__main__":

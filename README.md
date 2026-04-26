@@ -4,7 +4,8 @@ A small planning system that lets you define tasks in either YAML or Python.
 
 Each task supports these fields:
 
-- `name`
+- `id`
+- `label`
 - `start date` or `start_date`
 - `due date` or `due_date`
 - `expected duration` or `expected_duration` in months
@@ -16,7 +17,7 @@ Each task supports these fields:
 - `status`
 - `description`
 - `project`
-- `dependencies`
+- `dependencies` as a list of task ids
 
 ## Quick start
 
@@ -44,7 +45,8 @@ Top-level can be either a list of tasks or a mapping with a `tasks` key.
 
 ```yaml
 tasks:
-  - name: Draft architecture
+  - id: DraftArchitecture
+    label: Draft architecture
     start date: 2026-04-01
     due date: 2026-05-05
     expected duration: 2
@@ -58,7 +60,8 @@ tasks:
     project: Planning System
     dependencies: []
 
-  - name: Build parser
+  - id: BuildParser
+    label: Build parser
     start_date: 2026-05-01
     due_date: 2026-05-10
     expected_duration: 1
@@ -71,7 +74,7 @@ tasks:
     description: Load task definitions from YAML and Python files.
     project: Planning System
     dependencies:
-      - Draft architecture
+      - DraftArchitecture
 ```
 
 ## Python format
@@ -81,7 +84,8 @@ Define `TASKS` or `tasks` in a `.py` file:
 ```python
 TASKS = [
     {
-        "name": "Draft architecture",
+        "id": "DraftArchitecture",
+        "label": "Draft architecture",
         "start_date": "2026-04-01",
         "due_date": "2026-05-05",
         "expected_duration": 2,
@@ -108,7 +112,7 @@ Use one of:
 
 ## Commands
 
-- `validate`: checks required fields, invalid status values, invalid date or duration values, duplicate names, missing dependencies, and dependency cycles
+- `validate`: checks required fields, invalid status values, invalid date or duration values, invalid ids, duplicate ids, missing dependencies, and dependency cycles
 - `list`: prints task details in due-date order by default, including start date and expected duration in months
 - `summary`: groups tasks by project and milestone
 - `schedule`: prints tasks in dependency order and marks them as `READY`, `BLOCKED`, `ACTIVE`, or `COMPLETE`

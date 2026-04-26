@@ -76,10 +76,10 @@ def _print_tasks(tasks) -> None:
             f"{task.start_date.isoformat()} -> {task.due_date.isoformat()} | "
             f"{task.expected_duration} month(s) | {task.project} | {task.milestone} | "
             f"{task.priority} | risk={task.risk_level}/{task.risk_type} | "
-            f"status={task.status} | {task.name}"
+            f"status={task.status} | {task.label} [{task.id}]"
         )
         print(f"  mitigation: {task.risk_mitigation}")
-        print(f"  dependencies: {dependencies}")
+        print(f"  dependencies (ids): {dependencies}")
         print(f"  description: {task.description}")
 
 
@@ -100,13 +100,13 @@ def _print_schedule(tasks) -> None:
         print(
             f"{position:02d} | {state} | start={task.start_date.isoformat()} | "
             f"due={task.due_date.isoformat()} | duration={task.expected_duration} month(s) | "
-            f"status={task.status} | {task.name}"
+            f"status={task.status} | {task.label} [{task.id}]"
         )
         print(f"  project: {task.project}")
         print(f"  milestone: {task.milestone}")
         print(f"  risk: {task.risk_level}/{task.risk_type}")
         print(f"  mitigation: {task.risk_mitigation}")
-        print(f"  dependencies: {dependencies}")
+        print(f"  dependencies (ids): {dependencies}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 TASKS = [
     {
-        "name": "Draft architecture",
+        "id": "DraftArchitecture",
+        "label": "Draft architecture",
         "start_date": "2026-04-01",
         "due_date": "2026-05-05",
         "expected_duration": 2,
@@ -15,7 +16,8 @@ TASKS = [
         "dependencies": [],
     },
     {
-        "name": "Define task schema",
+        "id": "DefineTaskSchema",
+        "label": "Define task schema",
         "start_date": "2026-05-01",
         "due_date": "2026-05-07",
         "expected_duration": 1,
@@ -27,6 +29,6 @@ TASKS = [
         "status": "todo",
         "description": "Lock down the required task attributes and field aliases.",
         "project": "Planning System",
-        "dependencies": ["Draft architecture"],
+        "dependencies": ["DraftArchitecture"],
     },
 ]

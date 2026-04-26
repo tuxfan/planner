@@ -86,7 +86,7 @@ def _document_xml(
     for position, state, task in schedule:
         body.extend(
             [
-                _paragraph(f"{position}. {task.name}", style="Heading2"),
+                _paragraph(f"{position}. {task.label} [{task.id}]", style="Heading2"),
                 _paragraph(
                     f"State: {state} | Start: {task.start_date.isoformat()} | "
                     f"Due: {task.due_date.isoformat()} | Duration: {task.expected_duration} month(s)"
@@ -99,7 +99,7 @@ def _document_xml(
                 ),
                 _paragraph(f"Mitigation: {task.risk_mitigation}"),
                 _paragraph(
-                    "Dependencies: "
+                    "Dependencies (ids): "
                     + (", ".join(task.dependencies) if task.dependencies else "None")
                 ),
                 _paragraph(f"Description: {task.description}"),
@@ -125,7 +125,8 @@ def _paragraph(text: str, *, style: str | None = None) -> str:
 
 def _task_table(tasks: list[Task]) -> str:
     headers = [
-        "Name",
+        "ID",
+        "Label",
         "Start Date",
         "Due Date",
         "Expected Duration",
@@ -143,7 +144,8 @@ def _task_table(tasks: list[Task]) -> str:
         rows.append(
             _table_row(
                 [
-                    task.name,
+                    task.id,
+                    task.label,
                     task.start_date.isoformat(),
                     task.due_date.isoformat(),
                     f"{task.expected_duration} month(s)",
@@ -200,12 +202,11 @@ def _svg_document(
     y_gap = 50
     width = left_padding + len(schedule) * (card_width + x_gap) + 80
     height = top_padding + max(1, len(project_order)) * (card_height + y_gap) + 100
-    task_map = {task.name: task for task in tasks}
     positions = {}
     for position, state, task in schedule:
         x = left_padding + (position - 1) * (card_width + x_gap)
         y = top_padding + lanes[task.project] * (card_height + y_gap)
-        positions[task.name] = (x, y, state)
+        positions[task.id] = (x, y, state)
 
     elements = [
         f'<rect width="{width}" height="{height}" fill="#F8F5F0"/>',
@@ -223,7 +224,7 @@ def _svg_document(
         )
 
     for _, _, task in schedule:
-        x, y, _ = positions[task.name]
+        x, y, _ = positions[task.id]
         start_x = x
         start_y = y + card_height / 2
         for dependency in task.dependencies:
@@ -235,7 +236,7 @@ def _svg_document(
             )
 
     for position, state, task in schedule:
-        x, y, _ = positions[task.name]
+        x, y, _ = positions[task.id]
         fill = STATUS_COLORS.get(task.status, "#FFFFFF")
         stroke = RISK_COLORS.get(task.risk_level.lower(), "#495057")
         accent = PRIORITY_COLORS.get(task.priority.lower(), "#495057")
@@ -245,24 +246,25 @@ def _svg_document(
         text_y = y + 28
         elements.extend(
             [
-                f'<g id="{_slug(task.name)}">',
+                f'<g id="{_slug(task.id)}">',
                 f'<rect x="{x}" y="{y}" width="{card_width}" height="{card_height}" rx="16" fill="{fill}" stroke="{stroke}" stroke-width="4"/>',
                 f'<rect x="{x}" y="{y}" width="12" height="{card_height}" rx="12" fill="{accent}"/>',
                 f'<text x="{x + 22}" y="{text_y}" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#495057">{position:02d} {escape(state)}</text>',
-                f'<text x="{x + 22}" y="{text_y + 22}" font-family="Georgia, serif" font-size="18" font-weight="700" fill="#1D3557">{escape(task.name)}</text>',
-                f'<text x="{x + 22}" y="{text_y + 42}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">{escape(task.milestone)} | {task.start_date.isoformat()} to {task.due_date.isoformat()}</text>',
-                f'<text x="{x + 22}" y="{text_y + 60}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">duration {task.expected_duration} month(s)</text>',
-                f'<text x="{x + 22}" y="{text_y + 78}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">risk {escape(task.risk_level)}/{escape(task.risk_type)}</text>',
-                f'<text x="{x + 22}" y="{text_y + 96}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">deps {escape(dependencies)}</text>',
+                f'<text x="{x + 22}" y="{text_y + 22}" font-family="Georgia, serif" font-size="18" font-weight="700" fill="#1D3557">{escape(task.label)}</text>',
+                f'<text x="{x + 22}" y="{text_y + 40}" font-family="Arial, sans-serif" font-size="11" fill="#495057">id {escape(task.id)}</text>',
+                f'<text x="{x + 22}" y="{text_y + 58}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">{escape(task.milestone)} | {task.start_date.isoformat()} to {task.due_date.isoformat()}</text>',
+                f'<text x="{x + 22}" y="{text_y + 76}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">duration {task.expected_duration} month(s)</text>',
+                f'<text x="{x + 22}" y="{text_y + 94}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">risk {escape(task.risk_level)}/{escape(task.risk_type)}</text>',
+                f'<text x="{x + 22}" y="{text_y + 112}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">deps {escape(dependencies)}</text>',
             ]
         )
         for index, line in enumerate(description):
             elements.append(
-                f'<text x="{x + 22}" y="{text_y + 114 + index * 14}" font-family="Arial, sans-serif" font-size="11" fill="#495057">{escape(line)}</text>'
+                f'<text x="{x + 22}" y="{text_y + 130 + index * 14}" font-family="Arial, sans-serif" font-size="11" fill="#495057">{escape(line)}</text>'
             )
         for index, line in enumerate(mitigation):
             elements.append(
-                f'<text x="{x + 22}" y="{text_y + 142 + index * 14}" font-family="Arial, sans-serif" font-size="11" fill="#0B6E4F">{escape("mitigate: " + line if index == 0 else line)}</text>'
+                f'<text x="{x + 22}" y="{text_y + 158 + index * 14}" font-family="Arial, sans-serif" font-size="11" fill="#0B6E4F">{escape("mitigate: " + line if index == 0 else line)}</text>'
             )
         elements.append("</g>")
 

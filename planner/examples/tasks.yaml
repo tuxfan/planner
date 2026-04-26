@@ -1,5 +1,6 @@
 tasks:
-  - name: Draft architecture
+  - id: DraftArchitecture
+    label: Draft architecture
     start date: 2026-04-01
     due date: 2026-05-05
     expected duration: 2
@@ -13,7 +14,8 @@ tasks:
     project: Planning System
     dependencies: []
 
-  - name: Define task schema
+  - id: DefineTaskSchema
+    label: Define task schema
     start_date: 2026-05-01
     due_date: 2026-05-07
     expected_duration: 1
@@ -26,9 +28,10 @@ tasks:
     description: Lock down the required task attributes and field aliases.
     project: Planning System
     dependencies:
-      - Draft architecture
+      - DraftArchitecture
 
-  - name: Build loader
+  - id: BuildLoader
+    label: Build loader
     start_date: 2026-05-01
     due_date: 2026-05-12
     expected_duration: 1
@@ -41,9 +44,10 @@ tasks:
     description: Load and validate tasks from YAML and Python files.
     project: Planning System
     dependencies:
-      - Define task schema
+      - DefineTaskSchema
 
-  - name: Add CLI
+  - id: AddCLI
+    label: Add CLI
     start_date: 2026-05-01
     due_date: 2026-05-14
     expected_duration: 1
@@ -56,9 +60,10 @@ tasks:
     description: Provide validate, list, and summary commands.
     project: Planning System
     dependencies:
-      - Build loader
+      - BuildLoader
 
-  - name: Add schedule view
+  - id: AddScheduleView
+    label: Add schedule view
     start_date: 2026-05-01
     due_date: 2026-05-16
     expected_duration: 1
@@ -71,4 +76,4 @@ tasks:
     description: Show tasks in dependency order with readiness states.
     project: Planning System
     dependencies:
-      - Add CLI
+      - AddCLI
