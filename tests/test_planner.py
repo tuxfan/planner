@@ -21,8 +21,8 @@ class PlannerTests(unittest.TestCase):
                     tasks:
                       - id: A1
                         label: A
-                        start date: 2026-04-01
-                        due date: 2026-06-01
+                        start: m1q3fy26
+                        deadline: M3Q3FY26
                         expected duration: 2
                         milestone: Design
                         priority: high
@@ -35,8 +35,8 @@ class PlannerTests(unittest.TestCase):
                         dependencies: []
                       - id: B2
                         label: B
-                        start_date: 2026-05-01
-                        due_date: 2026-06-02
+                        start: M2Q3FY26
+                        deadline: m3q3fy26
                         expected_duration: 1
                         milestone: Build
                         priority: medium
@@ -56,7 +56,8 @@ class PlannerTests(unittest.TestCase):
 
         self.assertEqual([task.label for task in tasks], ["A", "B"])
         self.assertEqual([task.id for task in tasks], ["A1", "B2"])
-        self.assertEqual(tasks[0].start_date.isoformat(), "2026-04-01")
+        self.assertEqual(tasks[0].start, "M1Q3FY26")
+        self.assertEqual(tasks[0].deadline, "M3Q3FY26")
         self.assertEqual(tasks[0].expected_duration, 2)
         self.assertEqual(tasks[0].risk_type, "dependency")
         self.assertEqual(
@@ -72,8 +73,8 @@ class PlannerTests(unittest.TestCase):
                     """
                     - id: A1
                       label: A
-                      start_date: 2026-05-01
-                      due_date: 2026-06-01
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
                       expected_duration: 1
                       milestone: Build
                       priority: high
@@ -100,8 +101,8 @@ class PlannerTests(unittest.TestCase):
                     """
                     - id: bad id
                       label: A
-                      start_date: 2026-05-01
-                      due_date: 2026-06-01
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
                       expected_duration: 1
                       milestone: Build
                       priority: high
@@ -129,8 +130,8 @@ class PlannerTests(unittest.TestCase):
                     tasks:
                       - id: A1
                         label: A
-                        start_date: 2026-05-01
-                        due_date: 2026-06-01
+                        start: M2Q3FY26
+                        deadline: M3Q3FY26
                         expected_duration: 1
                         milestone: Build
                         priority: high
@@ -143,8 +144,8 @@ class PlannerTests(unittest.TestCase):
                         dependencies: []
                       - id: A1
                         label: B
-                        start_date: 2026-05-01
-                        due_date: 2026-06-02
+                        start: M2Q3FY26
+                        deadline: M3Q3FY26
                         expected_duration: 1
                         milestone: Build
                         priority: medium
@@ -173,8 +174,8 @@ class PlannerTests(unittest.TestCase):
                         {
                             "id": "A1",
                             "label": "A",
-                            "start_date": "2026-05-01",
-                            "due_date": "2026-06-01",
+                            "start": "M2Q3FY26",
+                            "deadline": "M3Q3FY26",
                             "expected_duration": 1,
                             "milestone": "Build",
                             "priority": "high",
@@ -189,8 +190,8 @@ class PlannerTests(unittest.TestCase):
                         {
                             "id": "B2",
                             "label": "B",
-                            "start_date": "2026-05-01",
-                            "due_date": "2026-06-02",
+                            "start": "M2Q3FY26",
+                            "deadline": "M3Q3FY26",
                             "expected_duration": 1,
                             "milestone": "Build",
                             "priority": "medium",
@@ -219,8 +220,8 @@ class PlannerTests(unittest.TestCase):
                     """
                     - id: A1
                       label: A
-                      start_date: 2026-05-01
-                      due_date: 2026-06-01
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
                       expected_duration: 1
                       milestone: Build
                       priority: high
@@ -247,14 +248,70 @@ class PlannerTests(unittest.TestCase):
                     """
                     - id: A1
                       label: A
-                      start_date: 2026-05-01
-                      due_date: 2026-06-01
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
                       expected_duration: 0
                       milestone: Build
                       priority: high
                       risk_level: low
                       risk_type: delivery
                       risk_mitigation: Use a positive whole number of months.
+                      status: todo
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_tasks(path)
+
+    def test_rejects_invalid_fiscal_period(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: Month5
+                      deadline: M3Q3FY26
+                      expected_duration: 1
+                      milestone: Build
+                      priority: high
+                      risk_level: low
+                      risk_type: delivery
+                      risk_mitigation: Use a valid fiscal period code.
+                      status: todo
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_tasks(path)
+
+    def test_rejects_start_after_deadline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: M2Q4FY26
+                      deadline: M3Q3FY26
+                      expected_duration: 1
+                      milestone: Build
+                      priority: high
+                      risk_level: low
+                      risk_type: delivery
+                      risk_mitigation: Keep the fiscal period sequence valid.
                       status: todo
                       description: First task.
                       project: Demo
@@ -276,8 +333,8 @@ class PlannerTests(unittest.TestCase):
                     tasks:
                       - id: A1
                         label: A
-                        start_date: 2026-05-01
-                        due_date: 2026-06-01
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
                         expected_duration: 1
                         milestone: Design
                         priority: high
@@ -290,8 +347,8 @@ class PlannerTests(unittest.TestCase):
                         dependencies: []
                       - id: B2
                         label: B
-                        start_date: 2026-05-01
-                        due_date: 2026-06-02
+                        start: M2Q3FY26
+                        deadline: M3Q3FY26
                         expected_duration: 1
                         milestone: Build
                         priority: high
@@ -304,8 +361,8 @@ class PlannerTests(unittest.TestCase):
                         dependencies: [A1]
                       - id: C3
                         label: C
-                        start_date: 2026-05-01
-                        due_date: 2026-06-03
+                        start: M3Q3FY26
+                        deadline: M1Q4FY26
                         expected_duration: 1
                         milestone: Test
                         priority: medium
@@ -328,6 +385,50 @@ class PlannerTests(unittest.TestCase):
             [(1, "COMPLETE", "A"), (2, "ACTIVE", "B"), (3, "BLOCKED", "C")],
         )
 
+    def test_orders_deadlines_across_fiscal_year_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: October kickoff
+                        start: M1Q1FY27
+                        deadline: M1Q1FY27
+                        expected_duration: 1
+                        milestone: Launch
+                        priority: medium
+                        risk_level: low
+                        risk_type: delivery
+                        risk_mitigation: Keep the kickoff scope narrow.
+                        status: todo
+                        description: First task in FY27.
+                        project: Demo
+                        dependencies: []
+                      - id: B2
+                        label: September close
+                        start: M3Q4FY26
+                        deadline: M3Q4FY26
+                        expected_duration: 1
+                        milestone: Wrap-up
+                        priority: medium
+                        risk_level: low
+                        risk_type: delivery
+                        risk_mitigation: Close the FY26 work before rollover.
+                        status: todo
+                        description: Final task in FY26.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            tasks = load_tasks(path)
+
+        self.assertEqual([task.id for task in tasks], ["B2", "A1"])
+
     def test_writes_word_document(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             source = Path(tmpdir) / "tasks.yaml"
@@ -337,8 +438,8 @@ class PlannerTests(unittest.TestCase):
                     tasks:
                       - id: A1
                         label: A
-                        start_date: 2026-04-01
-                        due_date: 2026-06-01
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
                         expected_duration: 2
                         milestone: Design
                         priority: high
@@ -362,7 +463,8 @@ class PlannerTests(unittest.TestCase):
                 document = archive.read("word/document.xml").decode("utf-8")
 
         self.assertIn("Project Plan", document)
-        self.assertIn("Start Date", document)
+        self.assertIn("Start", document)
+        self.assertIn("Deadline", document)
         self.assertIn("Expected Duration", document)
         self.assertIn("2 month(s)", document)
         self.assertIn("Risk Mitigation", document)
@@ -377,8 +479,8 @@ class PlannerTests(unittest.TestCase):
                     tasks:
                       - id: A1
                         label: A
-                        start_date: 2026-04-01
-                        due_date: 2026-06-01
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
                         expected_duration: 2
                         milestone: Design
                         priority: high
@@ -391,8 +493,8 @@ class PlannerTests(unittest.TestCase):
                         dependencies: []
                       - id: B2
                         label: B
-                        start_date: 2026-05-01
-                        due_date: 2026-06-02
+                        start: M2Q3FY26
+                        deadline: M3Q3FY26
                         expected_duration: 1
                         milestone: Build
                         priority: medium
@@ -416,6 +518,7 @@ class PlannerTests(unittest.TestCase):
 
         self.assertIn("<svg", svg)
         self.assertIn("Project Plan", svg)
+        self.assertIn("M1Q3FY26 to M3Q3FY26", svg)
         self.assertIn("duration 1 month(s)", svg)
         self.assertIn("risk high/delivery", svg)
         self.assertIn("marker-end=\"url(#arrow)\"", svg)

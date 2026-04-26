@@ -2,8 +2,8 @@ TASKS = [
     {
         "id": "DraftArchitecture",
         "label": "Draft architecture",
-        "start_date": "2026-04-01",
-        "due_date": "2026-05-05",
+        "start": "M1Q3FY26",
+        "deadline": "M2Q3FY26",
         "expected_duration": 2,
         "milestone": "Design",
         "priority": "high",
@@ -18,8 +18,8 @@ TASKS = [
     {
         "id": "DefineTaskSchema",
         "label": "Define task schema",
-        "start_date": "2026-05-01",
-        "due_date": "2026-05-07",
+        "start": "M2Q3FY26",
+        "deadline": "M2Q3FY26",
         "expected_duration": 1,
         "milestone": "Design",
         "priority": "high",

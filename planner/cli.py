@@ -73,7 +73,7 @@ def _print_tasks(tasks) -> None:
     for task in tasks:
         dependencies = ", ".join(task.dependencies) if task.dependencies else "-"
         print(
-            f"{task.start_date.isoformat()} -> {task.due_date.isoformat()} | "
+            f"{task.start} -> {task.deadline} | "
             f"{task.expected_duration} month(s) | {task.project} | {task.milestone} | "
             f"{task.priority} | risk={task.risk_level}/{task.risk_type} | "
             f"status={task.status} | {task.label} [{task.id}]"
@@ -98,8 +98,8 @@ def _print_schedule(tasks) -> None:
     for position, state, task in build_schedule(tasks):
         dependencies = ", ".join(task.dependencies) if task.dependencies else "-"
         print(
-            f"{position:02d} | {state} | start={task.start_date.isoformat()} | "
-            f"due={task.due_date.isoformat()} | duration={task.expected_duration} month(s) | "
+            f"{position:02d} | {state} | start={task.start} | "
+            f"deadline={task.deadline} | duration={task.expected_duration} month(s) | "
             f"status={task.status} | {task.label} [{task.id}]"
         )
         print(f"  project: {task.project}")

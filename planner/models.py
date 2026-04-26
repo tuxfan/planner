@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
 import re
 from typing import Iterable
 
@@ -13,8 +12,8 @@ class ValidationError(Exception):
 REQUIRED_FIELDS = {
     "id",
     "label",
-    "start_date",
-    "due_date",
+    "start",
+    "deadline",
     "expected_duration",
     "milestone",
     "priority",
@@ -28,10 +27,10 @@ REQUIRED_FIELDS = {
 }
 
 FIELD_ALIASES = {
-    "start date": "start_date",
-    "start_date": "start_date",
-    "due date": "due_date",
-    "due_date": "due_date",
+    "start": "start",
+    "start month": "start",
+    "deadline": "deadline",
+    "deadline month": "deadline",
     "expected duration": "expected_duration",
     "expected_duration": "expected_duration",
     "risk level": "risk_level",
@@ -43,14 +42,15 @@ FIELD_ALIASES = {
 }
 
 TASK_ID_PATTERN = re.compile(r"^[A-Za-z0-9]+$")
+FISCAL_PERIOD_PATTERN = re.compile(r"^M([1-3])Q([1-4])FY(\d{2})$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
 class Task:
     id: str
     label: str
-    start_date: date
-    due_date: date
+    start: str
+    deadline: str
     expected_duration: int
     milestone: str
     priority: str
@@ -91,21 +91,12 @@ class Task:
                 f"Task '{label}' has invalid id '{normalized['id']}'. Use only letters and numbers with no spaces."
             )
 
-        try:
-            start_date = date.fromisoformat(str(normalized["start_date"]))
-        except ValueError as exc:
-            raise ValidationError(
-                f"Task '{label}' has invalid start_date "
-                f"'{normalized['start_date']}'. Use YYYY-MM-DD."
-            ) from exc
-
-        try:
-            due_date = date.fromisoformat(str(normalized["due_date"]))
-        except ValueError as exc:
-            raise ValidationError(
-                f"Task '{label}' has invalid due_date "
-                f"'{normalized['due_date']}'. Use YYYY-MM-DD."
-            ) from exc
+        start = _parse_fiscal_period(
+            normalized["start"], field_name="start", label=label
+        )
+        deadline = _parse_fiscal_period(
+            normalized["deadline"], field_name="deadline", label=label
+        )
 
         try:
             expected_duration = int(normalized["expected_duration"])
@@ -121,10 +112,8 @@ class Task:
                 f"'{normalized['expected_duration']}'. Use a positive number of months."
             )
 
-        if start_date > due_date:
-            raise ValidationError(
-                f"Task '{label}' has start_date after due_date."
-            )
+        if _fiscal_period_sort_key(start) > _fiscal_period_sort_key(deadline):
+            raise ValidationError(f"Task '{label}' has start after deadline.")
 
         status = str(normalized["status"]).strip().lower()
         if status not in {"todo", "in_progress", "done"}:
@@ -136,8 +125,8 @@ class Task:
         return cls(
             id=task_id,
             label=label,
-            start_date=start_date,
-            due_date=due_date,
+            start=start,
+            deadline=deadline,
             expected_duration=expected_duration,
             milestone=str(normalized["milestone"]).strip(),
             priority=str(normalized["priority"]).strip(),
@@ -149,6 +138,32 @@ class Task:
             project=str(normalized["project"]).strip(),
             dependencies=tuple(str(item).strip() for item in dependencies),
         )
+
+
+def _parse_fiscal_period(value: object, *, field_name: str, label: str) -> str:
+    normalized = str(value).strip()
+    if not normalized:
+        raise ValidationError(
+            f"Task '{label}' has invalid {field_name} '{value}'. Use format M1Q1FY26."
+        )
+
+    match = FISCAL_PERIOD_PATTERN.fullmatch(normalized)
+    if match is None:
+        raise ValidationError(
+            f"Task '{label}' has invalid {field_name} '{value}'. Use format M1Q1FY26."
+        )
+
+    month_in_quarter, quarter, fiscal_year = match.groups()
+    return f"M{month_in_quarter}Q{quarter}FY{fiscal_year}"
+
+
+def _fiscal_period_sort_key(value: str) -> tuple[int, int]:
+    match = FISCAL_PERIOD_PATTERN.fullmatch(value)
+    if match is None:
+        raise ValidationError(f"Invalid fiscal period '{value}'.")
+    month_in_quarter, quarter, fiscal_year = match.groups()
+    fiscal_month = (int(quarter) - 1) * 3 + int(month_in_quarter)
+    return (int(fiscal_year), fiscal_month)
 
 
 def validate_tasks(tasks: Iterable[Task]) -> list[Task]:
@@ -186,7 +201,15 @@ def validate_tasks(tasks: Iterable[Task]) -> list[Task]:
     for task_id in task_map:
         walk(task_id)
 
-    return sorted(items, key=lambda task: (task.due_date, task.project, task.label, task.id))
+    return sorted(
+        items,
+        key=lambda task: (
+            _fiscal_period_sort_key(task.deadline),
+            task.project,
+            task.label,
+            task.id,
+        ),
+    )
 
 
 def build_schedule(tasks: Iterable[Task]) -> list[tuple[int, str, Task]]:
@@ -201,7 +224,7 @@ def build_schedule(tasks: Iterable[Task]) -> list[tuple[int, str, Task]]:
     ready = sorted(
         [task.id for task in ordered if indegree[task.id] == 0],
         key=lambda task_id: (
-            task_map[task_id].due_date,
+            _fiscal_period_sort_key(task_map[task_id].deadline),
             task_map[task_id].project,
             task_map[task_id].label,
             task_map[task_id].id,
@@ -219,7 +242,7 @@ def build_schedule(tasks: Iterable[Task]) -> list[tuple[int, str, Task]]:
         for dependent in sorted(
             dependents[task_id],
             key=lambda dep_name: (
-                task_map[dep_name].due_date,
+                _fiscal_period_sort_key(task_map[dep_name].deadline),
                 task_map[dep_name].project,
                 task_map[dep_name].label,
                 task_map[dep_name].id,
@@ -230,7 +253,7 @@ def build_schedule(tasks: Iterable[Task]) -> list[tuple[int, str, Task]]:
                 ready.append(dependent)
                 ready.sort(
                     key=lambda item: (
-                        task_map[item].due_date,
+                        _fiscal_period_sort_key(task_map[item].deadline),
                         task_map[item].project,
                         task_map[item].label,
                         task_map[item].id,

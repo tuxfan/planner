@@ -88,8 +88,8 @@ def _document_xml(
             [
                 _paragraph(f"{position}. {task.label} [{task.id}]", style="Heading2"),
                 _paragraph(
-                    f"State: {state} | Start: {task.start_date.isoformat()} | "
-                    f"Due: {task.due_date.isoformat()} | Duration: {task.expected_duration} month(s)"
+                    f"State: {state} | Start: {task.start} | "
+                    f"Deadline: {task.deadline} | Duration: {task.expected_duration} month(s)"
                 ),
                 _paragraph(
                     f"Project: {task.project} | Milestone: {task.milestone}"
@@ -127,8 +127,8 @@ def _task_table(tasks: list[Task]) -> str:
     headers = [
         "ID",
         "Label",
-        "Start Date",
-        "Due Date",
+        "Start",
+        "Deadline",
         "Expected Duration",
         "Project",
         "Milestone",
@@ -146,8 +146,8 @@ def _task_table(tasks: list[Task]) -> str:
                 [
                     task.id,
                     task.label,
-                    task.start_date.isoformat(),
-                    task.due_date.isoformat(),
+                    task.start,
+                    task.deadline,
                     f"{task.expected_duration} month(s)",
                     task.project,
                     task.milestone,
@@ -252,7 +252,7 @@ def _svg_document(
                 f'<text x="{x + 22}" y="{text_y}" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#495057">{position:02d} {escape(state)}</text>',
                 f'<text x="{x + 22}" y="{text_y + 22}" font-family="Georgia, serif" font-size="18" font-weight="700" fill="#1D3557">{escape(task.label)}</text>',
                 f'<text x="{x + 22}" y="{text_y + 40}" font-family="Arial, sans-serif" font-size="11" fill="#495057">id {escape(task.id)}</text>',
-                f'<text x="{x + 22}" y="{text_y + 58}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">{escape(task.milestone)} | {task.start_date.isoformat()} to {task.due_date.isoformat()}</text>',
+                f'<text x="{x + 22}" y="{text_y + 58}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">{escape(task.milestone)} | {task.start} to {task.deadline}</text>',
                 f'<text x="{x + 22}" y="{text_y + 76}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">duration {task.expected_duration} month(s)</text>',
                 f'<text x="{x + 22}" y="{text_y + 94}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">risk {escape(task.risk_level)}/{escape(task.risk_type)}</text>',
                 f'<text x="{x + 22}" y="{text_y + 112}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">deps {escape(dependencies)}</text>',
