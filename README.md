@@ -24,20 +24,32 @@ Each task supports these fields:
 Run from this directory:
 
 ```bash
-python3 -m planner.cli validate planner/examples/tasks.yaml
-python3 -m planner.cli list planner/examples/tasks.yaml
-python3 -m planner.cli summary planner/examples/tasks.yaml
-python3 -m planner.cli schedule planner/examples/tasks.yaml
-python3 -m planner.cli export-docx planner/examples/tasks.yaml /tmp/plan.docx
-python3 -m planner.cli export-svg planner/examples/tasks.yaml /tmp/plan.svg
+planner validate planner/examples/tasks.yaml
+planner list planner/examples/tasks.yaml
+planner summary planner/examples/tasks.yaml
+planner schedule planner/examples/tasks.yaml
+planner export-docx planner/examples/tasks.yaml /tmp/plan.docx
+planner export-svg planner/examples/tasks.yaml /tmp/plan.svg
+```
+
+If you set `TUXFAN_PLANNER_DATAFILE`, the CLI uses that file by default:
+
+```bash
+export TUXFAN_PLANNER_DATAFILE=planner/examples/tasks.yaml
+planner validate
+planner list
+planner export-docx /tmp/plan.docx
+planner export-svg /tmp/plan.svg
 ```
 
 You can also install it locally:
 
 ```bash
 python3 -m pip install -e .
-tuxfan-planner list planner/examples/tasks.yaml
+planner list planner/examples/tasks.yaml
 ```
+
+The legacy `tuxfan-planner` command remains available as an alias.
 
 ## YAML format
 

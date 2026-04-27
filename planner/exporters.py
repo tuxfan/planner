@@ -16,8 +16,9 @@ STATUS_COLORS = {
 
 RISK_COLORS = {
     "low": "#2D6A4F",
-    "medium": "#BC6C25",
-    "high": "#AE2012",
+    "medium": "#FFEA00",
+    "high": "#BC6C25",
+    "extreme": "#AE2012",
 }
 
 PRIORITY_COLORS = {

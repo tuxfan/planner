@@ -1,17 +1,32 @@
 from __future__ import annotations
 
+import io
 import tempfile
 import textwrap
+import tomllib
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 from zipfile import ZipFile
 
+from planner.cli import main
 from planner.exporters import write_docx, write_svg
 from planner.loader import load_tasks
 from planner.models import ValidationError, build_schedule
 
 
 class PlannerTests(unittest.TestCase):
+    def test_declares_planner_console_script(self) -> None:
+        pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+        data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+
+        self.assertEqual(data["project"]["scripts"]["planner"], "planner.cli:main")
+        self.assertEqual(
+            data["project"]["scripts"]["tuxfan-planner"],
+            "planner.cli:main",
+        )
+
     def test_loads_yaml_with_aliases(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "tasks.yaml"
@@ -29,7 +44,7 @@ class PlannerTests(unittest.TestCase):
                         risk level: low
                         risk type: dependency
                         risk mitigation: Close prerequisite questions before build starts.
-                        status: done
+                        status: complete
                         description: First task.
                         project: Demo
                         dependencies: []
@@ -43,7 +58,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: medium
                         risk_type: delivery
                         risk_mitigation: Keep the implementation slice small and testable.
-                        status: todo
+                        status: pending
                         description: Second task.
                         project: Demo
                         dependencies: [A1]
@@ -81,7 +96,7 @@ class PlannerTests(unittest.TestCase):
                       risk_level: low
                       risk_type: dependency
                       risk_mitigation: Confirm all upstream work exists in the file.
-                      status: todo
+                      status: pending
                       description: First task.
                       project: Demo
                       dependencies: [Missing]
@@ -109,7 +124,7 @@ class PlannerTests(unittest.TestCase):
                       risk_level: low
                       risk_type: dependency
                       risk_mitigation: Use a compact identifier for dependency tracking.
-                      status: todo
+                      status: pending
                       description: First task.
                       project: Demo
                       dependencies: []
@@ -138,7 +153,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: low
                         risk_type: dependency
                         risk_mitigation: Keep ids unique.
-                        status: todo
+                        status: pending
                         description: First task.
                         project: Demo
                         dependencies: []
@@ -152,7 +167,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: medium
                         risk_type: delivery
                         risk_mitigation: Keep ids unique.
-                        status: todo
+                        status: pending
                         description: Second task.
                         project: Demo
                         dependencies: []
@@ -182,7 +197,7 @@ class PlannerTests(unittest.TestCase):
                             "risk_level": "low",
                             "risk_type": "sequencing",
                             "risk_mitigation": "Resolve the dependency graph before execution.",
-                            "status": "todo",
+                            "status": "pending",
                             "description": "First task.",
                             "project": "Demo",
                             "dependencies": ["B2"],
@@ -198,7 +213,7 @@ class PlannerTests(unittest.TestCase):
                             "risk_level": "medium",
                             "risk_type": "sequencing",
                             "risk_mitigation": "Resolve the dependency graph before execution.",
-                            "status": "todo",
+                            "status": "pending",
                             "description": "Second task.",
                             "project": "Demo",
                             "dependencies": ["A1"],
@@ -256,7 +271,7 @@ class PlannerTests(unittest.TestCase):
                       risk_level: low
                       risk_type: delivery
                       risk_mitigation: Use a positive whole number of months.
-                      status: todo
+                      status: pending
                       description: First task.
                       project: Demo
                       dependencies: []
@@ -284,7 +299,7 @@ class PlannerTests(unittest.TestCase):
                       risk_level: low
                       risk_type: delivery
                       risk_mitigation: Use a valid fiscal period code.
-                      status: todo
+                      status: pending
                       description: First task.
                       project: Demo
                       dependencies: []
@@ -312,7 +327,7 @@ class PlannerTests(unittest.TestCase):
                       risk_level: low
                       risk_type: delivery
                       risk_mitigation: Keep the fiscal period sequence valid.
-                      status: todo
+                      status: pending
                       description: First task.
                       project: Demo
                       dependencies: []
@@ -341,7 +356,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: low
                         risk_type: dependency
                         risk_mitigation: Finish the prerequisite task first.
-                        status: done
+                        status: complete
                         description: First task.
                         project: Demo
                         dependencies: []
@@ -355,7 +370,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: medium
                         risk_type: delivery
                         risk_mitigation: Keep the active work limited to one slice.
-                        status: in_progress
+                        status: in-progress
                         description: Second task.
                         project: Demo
                         dependencies: [A1]
@@ -369,7 +384,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: medium
                         risk_type: quality
                         risk_mitigation: Wait for the implementation task to finish before testing.
-                        status: todo
+                        status: pending
                         description: Third task.
                         project: Demo
                         dependencies: [B2]
@@ -384,6 +399,103 @@ class PlannerTests(unittest.TestCase):
             [(step, state, task.label) for step, state, task in schedule],
             [(1, "COMPLETE", "A"), (2, "ACTIVE", "B"), (3, "BLOCKED", "C")],
         )
+
+    def test_cli_validate_uses_env_task_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: M1Q3FY26
+                      deadline: M1Q3FY26
+                      expected_duration: 1
+                      milestone: Design
+                      priority: high
+                      risk_level: low
+                      risk_type: delivery
+                      risk_mitigation: Keep the validation path simple.
+                      status: pending
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            with (
+                patch.dict("os.environ", {"TUXFAN_PLANNER_DATAFILE": str(path)}),
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                result = main(["validate"])
+
+        self.assertEqual(result, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn(f"Validated 1 task(s) from {path}.", stdout.getvalue())
+
+    def test_cli_validate_requires_task_file_without_env(self) -> None:
+        stderr = io.StringIO()
+
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            redirect_stderr(stderr),
+            self.assertRaises(SystemExit) as excinfo,
+        ):
+            main(["validate"])
+
+        self.assertEqual(excinfo.exception.code, 2)
+        self.assertIn(
+            "task_file is required unless TUXFAN_PLANNER_DATAFILE is set.",
+            stderr.getvalue(),
+        )
+
+    def test_cli_export_svg_uses_env_task_file_with_output_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: M1Q3FY26
+                      deadline: M1Q3FY26
+                      expected_duration: 1
+                      milestone: Design
+                      priority: high
+                      risk_level: low
+                      risk_type: delivery
+                      risk_mitigation: Keep the export path simple.
+                      status: pending
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.svg"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            with (
+                patch.dict(
+                    "os.environ",
+                    {"TUXFAN_PLANNER_DATAFILE": str(source)},
+                ),
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                result = main(["export-svg", str(destination)])
+
+            self.assertEqual(result, 0)
+            self.assertEqual(stderr.getvalue(), "")
+            self.assertTrue(destination.exists())
+            self.assertIn(f"Wrote SVG plan to {destination}.", stdout.getvalue())
 
     def test_orders_deadlines_across_fiscal_year_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -402,7 +514,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: low
                         risk_type: delivery
                         risk_mitigation: Keep the kickoff scope narrow.
-                        status: todo
+                        status: pending
                         description: First task in FY27.
                         project: Demo
                         dependencies: []
@@ -416,7 +528,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: low
                         risk_type: delivery
                         risk_mitigation: Close the FY26 work before rollover.
-                        status: todo
+                        status: pending
                         description: Final task in FY26.
                         project: Demo
                         dependencies: []
@@ -446,7 +558,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: low
                         risk_type: dependency
                         risk_mitigation: Finish the prerequisite task first.
-                        status: done
+                        status: complete
                         description: First task.
                         project: Demo
                         dependencies: []
@@ -487,7 +599,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: low
                         risk_type: dependency
                         risk_mitigation: Finish the prerequisite task first.
-                        status: done
+                        status: complete
                         description: First task.
                         project: Demo
                         dependencies: []
@@ -501,7 +613,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: high
                         risk_type: delivery
                         risk_mitigation: Keep the implementation slice small and testable.
-                        status: todo
+                        status: pending
                         description: Second task.
                         project: Demo
                         dependencies: [A1]

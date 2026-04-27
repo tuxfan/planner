@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = ["PyYAML>=6.0"]
 
 [project.scripts]
+planner = "planner.cli:main"
 tuxfan-planner = "planner.cli:main"
 
 [tool.setuptools.packages.find]
