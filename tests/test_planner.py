@@ -370,7 +370,7 @@ class PlannerTests(unittest.TestCase):
                         risk_level: medium
                         risk_type: delivery
                         risk_mitigation: Keep the active work limited to one slice.
-                        status: in-progress
+                        status: active
                         description: Second task.
                         project: Demo
                         dependencies: [A1]

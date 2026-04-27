@@ -116,10 +116,10 @@ class Task:
             raise ValidationError(f"Task '{label}' has start after deadline.")
 
         status = str(normalized["status"]).strip().lower()
-        if status not in {"pending", "in-progress", "blocked", "complete"}:
+        if status not in {"pending", "active", "blocked", "complete"}:
             raise ValidationError(
                 f"Task '{label}' has invalid status '{normalized['status']}'. "
-                "Use pending, in-progress, blocked, or complete."
+                "Use pending, active, blocked, or complete."
             )
 
         return cls(
@@ -266,7 +266,7 @@ def build_schedule(tasks: Iterable[Task]) -> list[tuple[int, str, Task]]:
 def _schedule_state(task: Task, task_map: dict[str, Task]) -> str:
     if task.status == "complete":
         return "COMPLETE"
-    if task.status == "in-progress":
+    if task.status == "active":
         return "ACTIVE"
     if task.status == "blocked":
         return "BLOCKED"

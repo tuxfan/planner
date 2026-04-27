@@ -14,7 +14,7 @@ Each task supports these fields:
 - `risk level` or `risk_level`: required string risk severity label such as `low`, `medium`, `high`, or `extreme`.
 - `risk type` or `risk_type`: required string risk category.
 - `risk mitigation` or `risk_mitigation`: required string describing how the risk will be mitigated.
-- `status`: required string status. Allowed values are `pending`, `in-progress`, `blocked`, and `complete`.
+- `status`: required string status. Allowed values are `pending`, `active`, `blocked`, and `complete`.
 - `description`: required string describing the task.
 - `project`: required string project name.
 - `dependencies`: required list of task ids. Each dependency must reference another task `id`.
@@ -119,7 +119,7 @@ TASKS = [
 Use one of:
 
 - `pending`
-- `in-progress`
+- `active`
 - `blocked`
 - `complete`
 

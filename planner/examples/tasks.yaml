@@ -40,7 +40,7 @@ tasks:
     risk_level: medium
     risk_type: integration
     risk_mitigation: Add schema validation tests for both YAML and Python task sources.
-    status: in-progress
+    status: active
     description: Load and validate tasks from YAML and Python files.
     project: Planning System
     dependencies:

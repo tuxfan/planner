@@ -9,7 +9,7 @@ from .models import Task, build_schedule, validate_tasks
 
 STATUS_COLORS = {
     "pending": "#F9E2AE",
-    "in-progress": "#A9D6E5",
+    "active": "#A9D6E5",
     "blocked": "#F4A6A6",
     "complete": "#B7E4C7",
 }
