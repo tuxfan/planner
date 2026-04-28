@@ -4,17 +4,17 @@ A small planning system that lets you define tasks in either YAML or Python.
 
 Each task supports these fields:
 
-- `id`: required string task id. Must be alphanumeric only, with no spaces.
+- `id`: required string task id. Must contain only letters, numbers, or underscores, with no spaces.
 - `label`: required string display name for the task.
 - `start`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
 - `deadline`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
 - `expected duration` or `expected_duration`: required positive whole number of months.
 - `milestone`: required string milestone name.
-- `priority`: required string priority label such as `low`, `medium`, or `high`.
+- `priority`: required string priority label such as `low`, `medium`, `high`, or `urgent`.
 - `risk level` or `risk_level`: required string risk severity label such as `low`, `medium`, `high`, or `extreme`.
 - `risk type` or `risk_type`: required string risk category.
 - `risk mitigation` or `risk_mitigation`: required string describing how the risk will be mitigated.
-- `status`: required string status. Allowed values are `pending`, `active`, `blocked`, and `complete`.
+- `status`: required string status. Allowed values are `pending`, `active`, `ongoing`, `blocked`, and `complete`.
 - `description`: required string describing the task.
 - `project`: required string project name.
 - `dependencies`: required list of task ids. Each dependency must reference another task `id`.
@@ -120,6 +120,7 @@ Use one of:
 
 - `pending`
 - `active`
+- `ongoing`
 - `blocked`
 - `complete`
 

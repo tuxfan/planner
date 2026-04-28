@@ -136,6 +136,51 @@ class PlannerTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 load_tasks(path)
 
+    def test_accepts_underscore_in_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A_1
+                        label: A
+                        start: M2Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 1
+                        milestone: Build
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep dependency ids aligned with task ids.
+                        status: pending
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                      - id: B_2
+                        label: B
+                        start: M2Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 1
+                        milestone: Build
+                        priority: medium
+                        risk_level: medium
+                        risk_type: dependency
+                        risk_mitigation: Keep dependency ids aligned with task ids.
+                        status: pending
+                        description: Second task.
+                        project: Demo
+                        dependencies: [A_1]
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            tasks = load_tasks(path)
+
+        self.assertEqual([task.id for task in tasks], ["A_1", "B_2"])
+        self.assertEqual(tasks[1].dependencies, ("A_1",))
+
     def test_rejects_duplicate_ids(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "tasks.yaml"
@@ -244,6 +289,95 @@ class PlannerTests(unittest.TestCase):
                       risk_type: delivery
                       risk_mitigation: Use a supported status value.
                       status: stalled
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_tasks(path)
+
+    def test_accepts_ongoing_status_urgent_priority_and_extreme_risk_level(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
+                      expected_duration: 1
+                      milestone: Build
+                      priority: urgent
+                      risk_level: extreme
+                      risk_type: delivery
+                      risk_mitigation: Escalate immediately and review daily.
+                      status: ongoing
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            tasks = load_tasks(path)
+            schedule = build_schedule(tasks)
+
+        self.assertEqual(tasks[0].priority, "urgent")
+        self.assertEqual(tasks[0].risk_level, "extreme")
+        self.assertEqual(tasks[0].status, "ongoing")
+        self.assertEqual(schedule[0][1], "ONGOING")
+
+    def test_rejects_invalid_priority(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
+                      expected_duration: 1
+                      milestone: Build
+                      priority: asap
+                      risk_level: low
+                      risk_type: delivery
+                      risk_mitigation: Use a supported priority value.
+                      status: pending
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_tasks(path)
+
+    def test_rejects_invalid_risk_level(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
+                      expected_duration: 1
+                      milestone: Build
+                      priority: high
+                      risk_level: severe
+                      risk_type: delivery
+                      risk_mitigation: Use a supported risk level value.
+                      status: pending
                       description: First task.
                       project: Demo
                       dependencies: []
@@ -635,6 +769,42 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("risk high/delivery", svg)
         self.assertIn("marker-end=\"url(#arrow)\"", svg)
         self.assertIn("id B2", svg)
+
+    def test_writes_svg_plan_for_ongoing_urgent_extreme_values(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: A
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 2
+                        milestone: Design
+                        priority: urgent
+                        risk_level: extreme
+                        risk_type: delivery
+                        risk_mitigation: Escalate immediately and review daily.
+                        status: ongoing
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.svg"
+
+            write_svg(load_tasks(source), destination)
+
+            svg = destination.read_text(encoding="utf-8")
+
+        self.assertIn("01 ONGOING", svg)
+        self.assertIn("risk extreme/delivery", svg)
+        self.assertIn('fill="#CDB4DB"', svg)
+        self.assertIn('fill="#D00000"', svg)
 
 
 if __name__ == "__main__":

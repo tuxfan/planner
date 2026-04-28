@@ -41,8 +41,11 @@ FIELD_ALIASES = {
     "risk_mitigation": "risk_mitigation",
 }
 
-TASK_ID_PATTERN = re.compile(r"^[A-Za-z0-9]+$")
+TASK_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 FISCAL_PERIOD_PATTERN = re.compile(r"^M([1-3])Q([1-4])FY(\d{2})$", re.IGNORECASE)
+ALLOWED_PRIORITIES = {"low", "medium", "high", "urgent"}
+ALLOWED_RISK_LEVELS = {"low", "medium", "high", "extreme"}
+ALLOWED_STATUSES = {"pending", "active", "ongoing", "blocked", "complete"}
 
 
 @dataclass(frozen=True)
@@ -88,7 +91,7 @@ class Task:
             )
         if not TASK_ID_PATTERN.fullmatch(task_id):
             raise ValidationError(
-                f"Task '{label}' has invalid id '{normalized['id']}'. Use only letters and numbers with no spaces."
+                f"Task '{label}' has invalid id '{normalized['id']}'. Use only letters, numbers, and underscores with no spaces."
             )
 
         start = _parse_fiscal_period(
@@ -115,11 +118,25 @@ class Task:
         if _fiscal_period_sort_key(start) > _fiscal_period_sort_key(deadline):
             raise ValidationError(f"Task '{label}' has start after deadline.")
 
+        priority = str(normalized["priority"]).strip().lower()
+        if priority not in ALLOWED_PRIORITIES:
+            raise ValidationError(
+                f"Task '{label}' has invalid priority '{normalized['priority']}'. "
+                "Use low, medium, high, or urgent."
+            )
+
+        risk_level = str(normalized["risk_level"]).strip().lower()
+        if risk_level not in ALLOWED_RISK_LEVELS:
+            raise ValidationError(
+                f"Task '{label}' has invalid risk_level '{normalized['risk_level']}'. "
+                "Use low, medium, high, or extreme."
+            )
+
         status = str(normalized["status"]).strip().lower()
-        if status not in {"pending", "active", "blocked", "complete"}:
+        if status not in ALLOWED_STATUSES:
             raise ValidationError(
                 f"Task '{label}' has invalid status '{normalized['status']}'. "
-                "Use pending, active, blocked, or complete."
+                "Use pending, active, ongoing, blocked, or complete."
             )
 
         return cls(
@@ -129,8 +146,8 @@ class Task:
             deadline=deadline,
             expected_duration=expected_duration,
             milestone=str(normalized["milestone"]).strip(),
-            priority=str(normalized["priority"]).strip(),
-            risk_level=str(normalized["risk_level"]).strip(),
+            priority=priority,
+            risk_level=risk_level,
             risk_type=str(normalized["risk_type"]).strip(),
             risk_mitigation=str(normalized["risk_mitigation"]).strip(),
             status=status,
@@ -268,6 +285,8 @@ def _schedule_state(task: Task, task_map: dict[str, Task]) -> str:
         return "COMPLETE"
     if task.status == "active":
         return "ACTIVE"
+    if task.status == "ongoing":
+        return "ONGOING"
     if task.status == "blocked":
         return "BLOCKED"
     if all(task_map[dependency].status == "complete" for dependency in task.dependencies):

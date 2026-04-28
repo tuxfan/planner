@@ -90,3 +90,8 @@ Validation rules currently enforced:
 - Renamed the scheduling fields from `start_date`/`due_date` to `start`/`deadline`.
 - Changed `start` and `deadline` parsing from ISO dates to full month names, with internal month-order comparison for validation and sorting.
 - Updated README, examples, CLI output, exporters, and tests to use the new month-based schema.
+
+### 2026-04-27
+
+- Confirmed the persistent session/context file has been renamed from `.context.md` to `AGENTS.md`.
+- Updated the working convention for future sessions to maintain `AGENTS.md` as the canonical context log file.
