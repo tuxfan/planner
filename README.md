@@ -1,6 +1,14 @@
 # Project Planner
 
-A small planning system that lets you define tasks in either YAML or Python.
+A small planning system that lets you define project plans and tasks in either YAML or Python.
+
+A plan can include optional top-level project metadata:
+
+- `portfolio`: portfolio or parent program name.
+- `project`: high-level project name. When present, this is used as the plan title.
+- `managers`: list of manager names.
+- `pocs`: list of point-of-contact names.
+- `summary`: high-level plan summary.
 
 Each task supports these fields:
 
@@ -53,9 +61,18 @@ The legacy `tuxfan-planner` command remains available as an alias.
 
 ## YAML format
 
-Top-level can be either a list of tasks or a mapping with a `tasks` key.
+Top-level can be either a list of tasks or a mapping with a `tasks` key. The mapping form can also include plan-level metadata such as `portfolio`, `project`, `managers`, `pocs`, and `summary`.
 
 ```yaml
+portfolio: Advanced Simulation and Computing
+project: Task-Parallel Project
+managers:
+  - Alice Example
+pocs:
+  - Casey Example, PI
+summary: >
+  High-level planning context for the task collection.
+
 tasks:
   - id: DraftArchitecture
     label: Draft architecture
@@ -91,27 +108,34 @@ tasks:
 
 ## Python format
 
-Define `TASKS` or `tasks` in a `.py` file:
+Define `PLAN` or `plan` in a `.py` file for metadata plus tasks. The legacy `TASKS` or `tasks` list still works.
 
 ```python
-TASKS = [
-    {
-        "id": "DraftArchitecture",
-        "label": "Draft architecture",
-        "start": "M1Q3FY26",
-        "deadline": "M2Q3FY26",
-        "expected_duration": 2,
-        "milestone": "Design",
-        "priority": "high",
-        "risk_level": "medium",
-        "risk_type": "scope",
-        "risk_mitigation": "Review the architecture with stakeholders before implementation starts.",
-        "status": "complete",
-        "description": "Produce the first architecture draft.",
-        "project": "Planning System",
-        "dependencies": [],
-    }
-]
+PLAN = {
+    "portfolio": "Advanced Simulation and Computing",
+    "project": "Task-Parallel Project",
+    "managers": ["Alice Example"],
+    "pocs": ["Casey Example, PI"],
+    "summary": "High-level planning context for the task collection.",
+    "tasks": [
+        {
+            "id": "DraftArchitecture",
+            "label": "Draft architecture",
+            "start": "M1Q3FY26",
+            "deadline": "M2Q3FY26",
+            "expected_duration": 2,
+            "milestone": "Design",
+            "priority": "high",
+            "risk_level": "medium",
+            "risk_type": "scope",
+            "risk_mitigation": "Review the architecture with stakeholders before implementation starts.",
+            "status": "complete",
+            "description": "Produce the first architecture draft.",
+            "project": "Planning System",
+            "dependencies": [],
+        }
+    ],
+}
 ```
 
 ## Status values

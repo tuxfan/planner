@@ -12,7 +12,7 @@ from zipfile import ZipFile
 
 from planner.cli import main
 from planner.exporters import write_docx, write_svg
-from planner.loader import load_tasks
+from planner.loader import load_plan, load_tasks
 from planner.models import ValidationError, build_schedule
 
 
@@ -79,6 +79,108 @@ class PlannerTests(unittest.TestCase):
             tasks[0].risk_mitigation,
             "Close prerequisite questions before build starts.",
         )
+
+    def test_loads_yaml_plan_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    portfolio: Advanced Simulation and Computing
+                    project: Task-Parallel Project
+                    managers:
+                      - Alice
+                      - Bob
+                    pocs:
+                      - Casey, PI
+                    summary: >
+                      High-level planning context for the task collection.
+                    tasks:
+                      - id: A1
+                        label: A
+                        start: M1Q3FY26
+                        deadline: M1Q3FY26
+                        expected_duration: 1
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep the task small.
+                        status: pending
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            plan = load_plan(path)
+            tasks = load_tasks(path)
+
+        self.assertEqual(plan.title, "Task-Parallel Project")
+        self.assertEqual(plan.portfolio, "Advanced Simulation and Computing")
+        self.assertEqual(plan.managers, ("Alice", "Bob"))
+        self.assertEqual(plan.pocs, ("Casey, PI",))
+        self.assertEqual(
+            plan.summary,
+            "High-level planning context for the task collection.",
+        )
+        self.assertEqual([task.id for task in plan.tasks], ["A1"])
+        self.assertEqual([task.id for task in tasks], ["A1"])
+
+    def test_loads_python_plan_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.py"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    PLAN = {
+                        "portfolio": "Portfolio A",
+                        "managers": ["Alice"],
+                        "pocs": ["Casey"],
+                        "summary": "Python plan metadata.",
+                        "tasks": [
+                            {
+                                "id": "A1",
+                                "label": "A",
+                                "start": "M1Q3FY26",
+                                "deadline": "M1Q3FY26",
+                                "expected_duration": 1,
+                                "milestone": "Design",
+                                "priority": "high",
+                                "risk_level": "low",
+                                "risk_type": "dependency",
+                                "risk_mitigation": "Keep the task small.",
+                                "status": "pending",
+                                "description": "First task.",
+                                "project": "Demo",
+                                "dependencies": [],
+                            }
+                        ],
+                    }
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            plan = load_plan(path)
+
+        self.assertEqual(plan.portfolio, "Portfolio A")
+        self.assertEqual(plan.managers, ("Alice",))
+        self.assertEqual(plan.pocs, ("Casey",))
+        self.assertEqual(plan.summary, "Python plan metadata.")
+
+    def test_loads_repository_data_file(self) -> None:
+        path = Path(__file__).resolve().parents[1] / "data" / "tasks.yaml"
+
+        plan = load_plan(path)
+
+        self.assertEqual(plan.portfolio, "Advanced Simulation and Computing (NA-114)")
+        self.assertIn("Simon Hammond", plan.managers)
+        self.assertIn("Ben Bergen, PI", plan.pocs)
+        self.assertGreater(len(plan.summary), 0)
+        self.assertGreater(len(plan.tasks), 0)
 
     def test_rejects_missing_dependency(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -681,6 +783,13 @@ class PlannerTests(unittest.TestCase):
             source.write_text(
                 textwrap.dedent(
                     """
+                    portfolio: Portfolio A
+                    managers:
+                      - Alice
+                    pocs:
+                      - Casey
+                    summary: >
+                      Document-level planning context.
                     tasks:
                       - id: A1
                         label: A
@@ -702,13 +811,17 @@ class PlannerTests(unittest.TestCase):
             )
             destination = Path(tmpdir) / "plan.docx"
 
-            write_docx(load_tasks(source), destination)
+            write_docx(load_plan(source), destination)
 
             self.assertTrue(destination.exists())
             with ZipFile(destination) as archive:
                 document = archive.read("word/document.xml").decode("utf-8")
 
-        self.assertIn("Project Plan", document)
+        self.assertIn("Portfolio A", document)
+        self.assertIn("Managers", document)
+        self.assertIn("Alice", document)
+        self.assertIn("POCs", document)
+        self.assertIn("Document-level planning context.", document)
         self.assertIn("Start", document)
         self.assertIn("Deadline", document)
         self.assertIn("Expected Duration", document)
@@ -722,6 +835,7 @@ class PlannerTests(unittest.TestCase):
             source.write_text(
                 textwrap.dedent(
                     """
+                    portfolio: Portfolio A
                     tasks:
                       - id: A1
                         label: A
@@ -757,13 +871,13 @@ class PlannerTests(unittest.TestCase):
             )
             destination = Path(tmpdir) / "plan.svg"
 
-            write_svg(load_tasks(source), destination)
+            write_svg(load_plan(source), destination)
 
             self.assertTrue(destination.exists())
             svg = destination.read_text(encoding="utf-8")
 
         self.assertIn("<svg", svg)
-        self.assertIn("Project Plan", svg)
+        self.assertIn("Portfolio A", svg)
         self.assertIn("M1Q3FY26 to M3Q3FY26", svg)
         self.assertIn("duration 1 month(s)", svg)
         self.assertIn("risk high/delivery", svg)

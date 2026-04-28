@@ -4,7 +4,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from .models import Task, build_schedule, validate_tasks
+from .models import ProjectPlan, Task, build_schedule, validate_tasks
 
 
 STATUS_COLORS = {
@@ -30,8 +30,9 @@ PRIORITY_COLORS = {
 }
 
 
-def write_docx(tasks: list[Task], destination: str | Path) -> Path:
-    ordered = validate_tasks(tasks)
+def write_docx(plan_or_tasks: ProjectPlan | list[Task], destination: str | Path) -> Path:
+    plan = _as_project_plan(plan_or_tasks)
+    ordered = validate_tasks(plan.tasks)
     schedule = build_schedule(ordered)
     output = Path(destination)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -40,18 +41,25 @@ def write_docx(tasks: list[Task], destination: str | Path) -> Path:
         archive.writestr("[Content_Types].xml", _content_types_xml())
         archive.writestr("_rels/.rels", _package_rels_xml())
         archive.writestr("word/_rels/document.xml.rels", _document_rels_xml())
-        archive.writestr("word/document.xml", _document_xml(ordered, schedule))
+        archive.writestr("word/document.xml", _document_xml(plan, ordered, schedule))
 
     return output
 
 
-def write_svg(tasks: list[Task], destination: str | Path) -> Path:
-    ordered = validate_tasks(tasks)
+def write_svg(plan_or_tasks: ProjectPlan | list[Task], destination: str | Path) -> Path:
+    plan = _as_project_plan(plan_or_tasks)
+    ordered = validate_tasks(plan.tasks)
     schedule = build_schedule(ordered)
     output = Path(destination)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(_svg_document(ordered, schedule), encoding="utf-8")
+    output.write_text(_svg_document(plan, ordered, schedule), encoding="utf-8")
     return output
+
+
+def _as_project_plan(plan_or_tasks: ProjectPlan | list[Task]) -> ProjectPlan:
+    if isinstance(plan_or_tasks, ProjectPlan):
+        return plan_or_tasks
+    return ProjectPlan(tasks=tuple(plan_or_tasks))
 
 
 def _content_types_xml() -> str:
@@ -79,13 +87,14 @@ def _document_rels_xml() -> str:
 
 
 def _document_xml(
-    tasks: list[Task], schedule: list[tuple[int, str, Task]]
+    plan: ProjectPlan, tasks: list[Task], schedule: list[tuple[int, str, Task]]
 ) -> str:
     body = [
-        _paragraph("Project Plan", style="Title"),
+        _paragraph(plan.title, style="Title"),
         _paragraph(f"Task count: {len(tasks)}"),
-        _paragraph("Execution Schedule", style="Heading1"),
     ]
+    body.extend(_metadata_paragraphs(plan))
+    body.append(_paragraph("Execution Schedule", style="Heading1"))
 
     for position, state, task in schedule:
         body.extend(
@@ -118,6 +127,30 @@ def _document_xml(
         """<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">"""
         f"<w:body>{''.join(body)}<w:sectPr/></w:body></w:document>"
     )
+
+
+def _metadata_paragraphs(plan: ProjectPlan) -> list[str]:
+    body: list[str] = []
+    if plan.project:
+        body.append(_paragraph(f"Project: {plan.project}"))
+    if plan.portfolio:
+        body.append(_paragraph(f"Portfolio: {plan.portfolio}"))
+    if plan.managers:
+        body.append(_paragraph("Managers: " + ", ".join(plan.managers)))
+    if plan.pocs:
+        body.append(_paragraph("POCs: " + ", ".join(plan.pocs)))
+    if plan.summary:
+        body.extend(
+            [
+                _paragraph("Summary", style="Heading1"),
+                *[_paragraph(line) for line in _summary_lines(plan.summary)],
+            ]
+        )
+    return body
+
+
+def _summary_lines(summary: str) -> list[str]:
+    return [line.strip() for line in summary.splitlines() if line.strip()]
 
 
 def _paragraph(text: str, *, style: str | None = None) -> str:
@@ -194,7 +227,7 @@ def _table_cell(value: str, *, header: bool = False) -> str:
 
 
 def _svg_document(
-    tasks: list[Task], schedule: list[tuple[int, str, Task]]
+    plan: ProjectPlan, tasks: list[Task], schedule: list[tuple[int, str, Task]]
 ) -> str:
     project_order = sorted({task.project for task in tasks})
     lanes = {project: index for index, project in enumerate(project_order)}
@@ -214,7 +247,7 @@ def _svg_document(
 
     elements = [
         f'<rect width="{width}" height="{height}" fill="#F8F5F0"/>',
-        '<text x="40" y="48" font-family="Georgia, serif" font-size="28" fill="#1D3557">Project Plan</text>',
+        f'<text x="40" y="48" font-family="Georgia, serif" font-size="28" fill="#1D3557">{escape(plan.title)}</text>',
         '<text x="40" y="76" font-family="Arial, sans-serif" font-size="14" fill="#4A4E69">Fill color = status, border = risk level, accent bar = priority</text>',
     ]
 

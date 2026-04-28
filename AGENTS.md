@@ -12,6 +12,7 @@ It loads task definitions from YAML or Python files, validates them, prints summ
 - Dependency: `PyYAML>=6.0`
 - CLI entry point: `project-planner = planner.cli:main`
 - Example data: `planner/examples/tasks.yaml` and `planner/examples/tasks.py`
+- Top-level plan metadata: `portfolio`, `project`, `managers`, `pocs`, and `summary`
 
 ## Repository Map
 
@@ -24,6 +25,14 @@ It loads task definitions from YAML or Python files, validates them, prints summ
 - `tests/test_planner.py`: unit tests for loading, validation, scheduling, and exporters
 
 ## Data Model Notes
+
+Plan files can be a raw task list or a mapping with `tasks` plus optional metadata:
+
+- `portfolio`: portfolio or parent program name
+- `project`: high-level project name
+- `managers`: list of manager names
+- `pocs`: list of point-of-contact names
+- `summary`: high-level plan summary
 
 Each task includes:
 
@@ -66,6 +75,7 @@ Validation rules currently enforced:
 - `schedule` uses dependency order and emits `COMPLETE`, `ACTIVE`, `READY`, or `BLOCKED`.
 - `export-docx` writes a minimal Word document directly as zipped XML.
 - `export-svg` renders project lanes, dependency arrows, and task cards with status/risk/priority colors.
+- `load_plan()` returns a `ProjectPlan` with validated tasks plus optional metadata; `load_tasks()` remains as a backward-compatible task-list wrapper.
 
 ## Working Conventions For Future Sessions
 
@@ -95,3 +105,10 @@ Validation rules currently enforced:
 
 - Confirmed the persistent session/context file has been renamed from `.context.md` to `AGENTS.md`.
 - Updated the working convention for future sessions to maintain `AGENTS.md` as the canonical context log file.
+
+### 2026-04-28
+
+- Added support for plan-level metadata in YAML and Python sources through a new `ProjectPlan` model and `load_plan()` loader.
+- Preserved backward compatibility by keeping `load_tasks()` as a task-list wrapper around `load_plan()`.
+- Updated CLI output and `.docx`/`.svg` exports to include plan metadata when present.
+- Added tests for metadata loading from YAML/Python, exporter output, and validation of `data/tasks.yaml`.

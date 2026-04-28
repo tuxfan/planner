@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import re
-from typing import Iterable
+from typing import Iterable, Mapping
 
 
 class ValidationError(Exception):
@@ -155,6 +155,21 @@ class Task:
             project=str(normalized["project"]).strip(),
             dependencies=tuple(str(item).strip() for item in dependencies),
         )
+
+
+@dataclass(frozen=True)
+class ProjectPlan:
+    tasks: tuple[Task, ...]
+    portfolio: str = ""
+    project: str = ""
+    managers: tuple[str, ...] = ()
+    pocs: tuple[str, ...] = ()
+    summary: str = ""
+    metadata: Mapping[str, object] = field(default_factory=dict)
+
+    @property
+    def title(self) -> str:
+        return self.project or self.portfolio or "Project Plan"
 
 
 def _parse_fiscal_period(value: object, *, field_name: str, label: str) -> str:

@@ -6,7 +6,7 @@ import sys
 from collections import defaultdict
 
 from .exporters import write_docx, write_svg
-from .loader import load_tasks
+from .loader import load_plan
 from .models import ValidationError, build_schedule
 
 TASK_FILE_ENV_VAR = "TUXFAN_PLANNER_DATAFILE"
@@ -66,34 +66,39 @@ def main(argv: list[str] | None = None) -> int:
     task_file, output_file = _resolve_paths(args, parser)
 
     try:
-        tasks = load_tasks(task_file)
+        plan = load_plan(task_file)
+        tasks = list(plan.tasks)
     except ValidationError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
     if args.command == "validate":
         print(f"Validated {len(tasks)} task(s) from {task_file}.")
+        _print_plan_metadata(plan)
         return 0
 
     if args.command == "list":
+        _print_plan_metadata(plan)
         _print_tasks(tasks)
         return 0
 
     if args.command == "summary":
+        _print_plan_metadata(plan)
         _print_summary(tasks)
         return 0
 
     if args.command == "schedule":
+        _print_plan_metadata(plan)
         _print_schedule(tasks)
         return 0
 
     if args.command == "export-docx":
-        output = write_docx(tasks, output_file)
+        output = write_docx(plan, output_file)
         print(f"Wrote Word document to {output}.")
         return 0
 
     if args.command == "export-svg":
-        output = write_svg(tasks, output_file)
+        output = write_svg(plan, output_file)
         print(f"Wrote SVG plan to {output}.")
         return 0
 
@@ -138,6 +143,25 @@ def _resolve_paths(
 
     parser.error(f"Unknown command: {args.command}")
     raise AssertionError("parser.error should have exited")
+
+
+def _print_plan_metadata(plan) -> None:
+    if not any((plan.project, plan.portfolio, plan.managers, plan.pocs, plan.summary)):
+        return
+    if plan.project:
+        print(f"Project: {plan.project}")
+    if plan.portfolio:
+        print(f"Portfolio: {plan.portfolio}")
+    if plan.managers:
+        print("Managers: " + ", ".join(plan.managers))
+    if plan.pocs:
+        print("POCs: " + ", ".join(plan.pocs))
+    if plan.summary:
+        print("Summary:")
+        for line in plan.summary.splitlines():
+            if line.strip():
+                print(f"  {line.strip()}")
+    print()
 
 
 def _print_tasks(tasks) -> None:
