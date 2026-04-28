@@ -805,6 +805,21 @@ class PlannerTests(unittest.TestCase):
                         description: First task.
                         project: Demo
                         dependencies: []
+                      - id: LONG_IDENTIFIER_FOR_TABLE
+                        label: B
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 1
+                        milestone: Build
+                        priority: medium
+                        risk_level: medium
+                        risk_type: schedule
+                        risk_mitigation: Track the prerequisite task.
+                        status: active
+                        description: Second task.
+                        project: Other
+                        dependencies:
+                          - A1
                     """
                 ),
                 encoding="utf-8",
@@ -818,14 +833,21 @@ class PlannerTests(unittest.TestCase):
                 document = archive.read("word/document.xml").decode("utf-8")
 
         self.assertIn("Portfolio A", document)
-        self.assertIn("Managers", document)
+        self.assertIn("Federal Portfolio(s)", document)
+        self.assertIn("Federal Program Manager(s)", document)
         self.assertIn("Alice", document)
-        self.assertIn("POCs", document)
+        self.assertIn("Project Points of Contact", document)
         self.assertIn("Document-level planning context.", document)
+        self.assertIn("Execution", document)
+        self.assertIn("Tasks", document)
+        self.assertIn("Resourcing/Schedule", document)
+        self.assertIn("Task A.1", document)
+        self.assertIn("Task B.1", document)
+        self.assertNotIn("LONG_IDENTIFIER_FOR_TABLE", document)
         self.assertIn("Start", document)
         self.assertIn("Deadline", document)
-        self.assertIn("Expected Duration", document)
-        self.assertIn("2 month(s)", document)
+        self.assertIn("Duration", document)
+        self.assertIn("2 mo.", document)
         self.assertIn("Risk Mitigation", document)
         self.assertIn("Finish the prerequisite task first.", document)
 

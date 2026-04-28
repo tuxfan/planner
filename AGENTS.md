@@ -73,7 +73,7 @@ Validation rules currently enforced:
 - `list` prints task details in validated sort order.
 - `summary` groups counts by project and milestone.
 - `schedule` uses dependency order and emits `COMPLETE`, `ACTIVE`, `READY`, or `BLOCKED`.
-- `export-docx` writes a minimal Word document directly as zipped XML.
+- `export-docx` writes a minimal Word document directly as zipped XML, using a reference-style narrative plan layout with compact per-project task numbers in the summary table.
 - `export-svg` renders project lanes, dependency arrows, and task cards with status/risk/priority colors.
 - `load_plan()` returns a `ProjectPlan` with validated tasks plus optional metadata; `load_tasks()` remains as a backward-compatible task-list wrapper.
 
@@ -112,3 +112,5 @@ Validation rules currently enforced:
 - Preserved backward compatibility by keeping `load_tasks()` as a task-list wrapper around `load_plan()`.
 - Updated CLI output and `.docx`/`.svg` exports to include plan metadata when present.
 - Added tests for metadata loading from YAML/Python, exporter output, and validation of `data/tasks.yaml`.
+- Updated `.docx` export formatting to more closely match `data/example.docx`: title/metadata labels, project summary, execution/activity sections, grouped task descriptions, a landscape task summary table, and a risk mitigation section.
+- Replaced raw task ids in the `.docx` table and dependency display with generated per-project task numbers such as `Task A.1`, avoiding layout issues from long ids.

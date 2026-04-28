@@ -1,0 +1,351 @@
+portfolio: Advanced Simulation and Computing (NA-114)
+
+managers:
+  - Simon Hammond
+  - Sarah Campbell
+  - Jim Pelz
+  - Mike Lang
+
+pocs:
+  - John Patchett, PM
+  - Ben Bergen, PI
+
+summary: >
+  The Task-Parallel Project (TPP) is a new organization that encompasses all
+  task-based CSSE activities at LANL including FleCSI, specialization design
+  and development, and internal and user application development.
+
+  The goals of this five-year plan are to: (1) Continue support for existing
+  FleCSI-based applications and users; (2) Deliver exemplar FleCSI-based codes
+  aimed at the Research and Development (R&D) of FleCSI capability with
+  deliverables aligned to ASC system deployments; (3) Use the requirements for
+  these codes to drive new CS capability development for FleCSI deliverables;
+  and (4) Renew community outreach efforts for FleCSI with an increased focus
+  on workshops, tutorials, presentations, and publications.
+
+  There is a critical need for multi-physics codes that can run efficiently on
+  emerging computing architectures, especially those being evaluated and/or
+  chosen for existing and future Advanced Technology Systems (ATS). The
+  Task-Parallel Project (TPP) is designed to meet this challenge with a
+  programming model that supports seamless hierarchical parallelism for
+  exploiting the features of current and future system architectures.
+
+  This five-year plan will attempt to create two gold-standard FleCSI-based
+  multi-physics exemplar applications (radio and barchetta) that target
+  multi-group, flux-limited radiation-hydrodynamics with additional physics,
+  e.g., reactive burn, thermonuclear burn, and neutron transport. These
+  applications will be optimized to run efficiently at scale on the Mission
+  system (ATS-5 with Vera Rubin node architecture). Written descriptions and
+  demonstration code will be provided to the ASC Integrated Codes (IC) teams to
+  facilitate knowledge transfer from CSSE to the broader program.
+
+  To meet these goals, we have chosen high- and low-bar paths that mitigate
+  risk while still delivering new and robust capability to our target users.
+
+tasks:
+
+#------------------------------------------------------------------------------#
+# TPA Tasks
+#------------------------------------------------------------------------------#
+
+  #----------------------------------------------------------------------------#
+  # - id: ID
+  #   label: Label
+  #   start: M1Q1FY26
+  #   deadline: M1Q1FY26
+  #   expected duration: 1
+  #   milestone: STRING
+  #   priority: low-medium-high-urgent
+  #   risk level: low-medium-high-extreme
+  #   risk type: technical-schedule-budgetary-operational
+  #   risk mitigation: STRING
+  #   status: pending-active-blocked-complete
+  #   description: >
+  #     STRING
+  #   project: Task-Parallel Applications
+  #   dependencies: []
+  #
+
+#------------------------------------------------------------------------------#
+# TPS Tasks
+#------------------------------------------------------------------------------#
+
+  - id: VTK
+    label: VTK Support
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: medium
+    risk level: low
+    risk type: technical
+    risk mitigation: Find additional vtk expertise.
+    status: active
+    description: >
+      Add VTK I/O support for unstructured mesh input.
+    project: Task-Parallel Specializations
+    dependencies: []
+
+  - id: VTK_VIZ
+    label: VTK Visualization
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: medium
+    risk level: low
+    risk type: technical
+    risk mitigation: Find additional vtk expertise.
+    status: pending
+    description: >
+      Add VTK I/O support for structured and unstructured visualization.
+    project: Task-Parallel Specializations
+    dependencies: []
+
+  - id: CHECKPOINT_RISTRA
+    label: Checkpoint/Restart Integration
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: high
+    risk level: medium
+    risk type: technical
+    risk mitigation: Work with the FleCSI team.
+    status: active
+    description: >
+      Work with the Ristra project to integrate checkpoint/restart into the
+      moya application. Redesign moya’s workflow to start from a checkpoint
+      file to drastically improve preprocessing performance.
+    project: Task-Parallel Specializations
+    dependencies: []
+
+  #----------------------------------------------------------------------------#
+  # - id: ID
+  #   label: Label
+  #   start: M1Q1FY26
+  #   deadline: M1Q1FY26
+  #   expected duration: 1
+  #   milestone: STRING
+  #   priority: low-medium-high-urgent
+  #   risk level: low-medium-high-extreme
+  #   risk type: technical-schedule-budgetary-operational
+  #   risk mitigation: STRING
+  #   status: pending-active-blocked-complete
+  #   description: >
+  #     STRING
+  #   project: Task-Parallel Specializations
+  #   dependencies: []
+  #
+
+#------------------------------------------------------------------------------#
+# FleCSI Tasks
+#------------------------------------------------------------------------------#
+
+  - id: CHECKPOINT_RESTART
+    label: Checkpoint/Restart
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Ristra Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Add additional resources
+    status: active
+    description: >
+      Finish support for all backends and topologies (resources permitting).
+      Prioritization is given to add robust support for topo::unstructured for
+      integration into the moya application.
+    project: FleCSI
+    dependencies: []
+
+  - id: MULTIMODEL
+    label: Multi-Material/Multi-Model Data Structures
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Ristra Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Add additional resources
+    status: active
+    description: >
+      Add support for ragged mutators on GPU. We have developed a strategy for
+      memory management that will be consitent across CPU and GPU/Accelerator
+      architectures.
+      Work with the TPS team to modify MM-MM support for use in the barchetta
+      and radio applications (if necessary). MM-MM data structure support was
+      released in FleCSI 2.4 but is untested in an application.
+    project: FleCSI
+    dependencies: []
+
+  - id: RAGGED_EFFICIENCY
+    label: Ragged Efficiency
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: TBD
+    priority: medium
+    risk level: low
+    risk type: schedule
+    risk mitigation: Add additional resources
+    status: active
+    description: >
+      Improve efficiency of internal ragged/sparse data layout representations
+      for better performance of mutator operations (in particular, on
+      accelerator architectures).
+    project: FleCSI
+    dependencies: []
+
+  - id: KOKKOS
+    label: Kokkos Efficiency & Interface Extensions
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: medium
+    risk level: low
+    risk type: technical, schedule
+    risk mitigation: >
+      technical: Work with Kokkos team to resolve techincal issues
+      schedule: Increased staffing/focus
+    status: active
+    description: >
+      This is an on-going activity to extend the FleCSI kernel interface with
+      enhanced feature support, e.g., support for Kokkos execution spaces to
+      allow more flexible concurrent execution across CPUs and GPUs with openmp
+      and Cuda (targeting El Capitan).
+    project: FleCSI
+    dependencies: []
+
+  - id: SET_TOPOLOGY
+    label: Set Topology
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: medium
+    risk level: low
+    risk type: technical
+    risk mitigation: >
+      technical: Work with Carta Blanca and VPIC teams
+    status: pending
+    description: >
+      Add topology support for non-interacting particle type methods, e.g.,
+      Material-Point Method (MPM) and Particle-in-Cell (PIC) Method.
+    project: FleCSI
+    dependencies: []
+
+  - id: HPX
+    label: HPX (Production Support)
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: medium
+    risk level: medium
+    risk type: technical, schedule, budgetary
+    risk mitigation: >
+      technical: Collaboration with LSU team to adapt or extend HPX
+      schedule: Additional staffing
+      budgetary: Delay work
+    status: ongoing
+    description: >
+      Bring HPX backend to production quality w/GPU support.
+    project: FleCSI
+    dependencies: []
+
+  - id: LEGION
+    label: Legion Performance
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: high
+    risk level: medium
+    risk type: technical
+    risk mitigation: >
+      technical: Work with the Legion team
+    status: active
+    description: >
+      Make improvements to Legion performance through upstream feedback and
+      collaboration with the Legion team.
+    project: FleCSI
+    dependencies: []
+
+  - id: DATA_MIGRATION
+    label: Data Migration (All Backends)
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: medium
+    risk level: medium
+    risk type: technical
+    risk mitigation: >
+      technical: Collorate with HPX and OpenMPI teams
+    status: pending
+    description: >
+      Add support to the MPI and HPX backends to dynamically move data to
+      different address spaces. An important use case is for parallel
+      rendezvous methods for remap.
+    project: FleCSI
+    dependencies: []
+
+  - id: DYNAMIC_MESH
+    label: Ergonomic Mesh Resizing
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: low
+    risk level: medium
+    risk type: technical
+    risk mitigation: >
+      technical: Collaborate with Portage team
+    status: pending
+    description: >
+      Add interface support for more ergonomic mesh resizing of dynamic mesh
+      connectivity, e.g., adaptive mesh refinement (AMR).
+    project: FleCSI
+    dependencies: []
+
+  - id: MAPPER
+    label: Mapper Framework
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: TBD
+    priority: medium
+    risk level: medium
+    risk type: technical
+    risk mitigation: >
+      technical: Work with Legion team
+    status: active
+    description: >
+      Create a mapper architecture that supports synthesis of the monolithic
+      data structure expected by Legion, with attributes such as system/node
+      architecture and topology, application structure, and the FleCSI feature
+      set.
+    project: FleCSI
+    dependencies: []
+
+  #----------------------------------------------------------------------------#
+  # - id: ID
+  #   label: Label
+  #   start: M1Q1FY26
+  #   deadline: M1Q1FY26
+  #   expected duration: 1
+  #   milestone: STRING
+  #   priority: low-medium-high-urgent
+  #   risk level: low-medium-high-extreme
+  #   risk type: technical-schedule-budgetary-operational
+  #   risk mitigation: STRING
+  #   status: pending-active-blocked-complete
+  #   description: >
+  #     STRING
+  #   project: STRING
+  #   dependencies: []
+  #
