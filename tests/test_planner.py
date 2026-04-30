@@ -36,6 +36,13 @@ class PlannerTests(unittest.TestCase):
                     tasks:
                       - id: A1
                         label: A
+                        bnr: DP1518130
+                        cost: $100K
+                        funding status: funded
+                        type: labor
+                        tags:
+                          - gpu
+                          - restart
                         start: m1q3fy26
                         deadline: M3Q3FY26
                         expected duration: 2
@@ -50,6 +57,8 @@ class PlannerTests(unittest.TestCase):
                         dependencies: []
                       - id: B2
                         label: B
+                        funding_status: proposed
+                        tags: integration, parser
                         start: M2Q3FY26
                         deadline: m3q3fy26
                         expected_duration: 1
@@ -74,6 +83,13 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(tasks[0].start, "M1Q3FY26")
         self.assertEqual(tasks[0].deadline, "M3Q3FY26")
         self.assertEqual(tasks[0].expected_duration, 2)
+        self.assertEqual(tasks[0].bnr, "DP1518130")
+        self.assertEqual(tasks[0].cost, "$100K")
+        self.assertEqual(tasks[0].funding_status, "funded")
+        self.assertEqual(tasks[0].type, "labor")
+        self.assertEqual(tasks[0].tags, ("gpu", "restart"))
+        self.assertEqual(tasks[1].funding_status, "proposed")
+        self.assertEqual(tasks[1].tags, ("integration", "parser"))
         self.assertEqual(tasks[0].risk_type, "dependency")
         self.assertEqual(
             tasks[0].risk_mitigation,
@@ -95,6 +111,10 @@ class PlannerTests(unittest.TestCase):
                       - Casey, PI
                     summary: >
                       High-level planning context for the task collection.
+                    execution:
+                      - label: Deliverable A
+                        description: >
+                          Narrative execution detail for the deliverable.
                     tasks:
                       - id: A1
                         label: A
@@ -126,6 +146,12 @@ class PlannerTests(unittest.TestCase):
             plan.summary,
             "High-level planning context for the task collection.",
         )
+        self.assertEqual(len(plan.execution), 1)
+        self.assertEqual(plan.execution[0].label, "Deliverable A")
+        self.assertEqual(
+            plan.execution[0].description,
+            "Narrative execution detail for the deliverable.",
+        )
         self.assertEqual([task.id for task in plan.tasks], ["A1"])
         self.assertEqual([task.id for task in tasks], ["A1"])
 
@@ -140,6 +166,12 @@ class PlannerTests(unittest.TestCase):
                         "managers": ["Alice"],
                         "pocs": ["Casey"],
                         "summary": "Python plan metadata.",
+                        "execution": [
+                            {
+                                "label": "Execution A",
+                                "description": "Python execution detail.",
+                            }
+                        ],
                         "tasks": [
                             {
                                 "id": "A1",
@@ -170,6 +202,8 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(plan.managers, ("Alice",))
         self.assertEqual(plan.pocs, ("Casey",))
         self.assertEqual(plan.summary, "Python plan metadata.")
+        self.assertEqual(plan.execution[0].label, "Execution A")
+        self.assertEqual(plan.execution[0].description, "Python execution detail.")
 
     def test_loads_repository_data_file(self) -> None:
         path = Path(__file__).resolve().parents[1] / "data" / "tasks.yaml"
@@ -181,6 +215,55 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Ben Bergen, PI", plan.pocs)
         self.assertGreater(len(plan.summary), 0)
         self.assertGreater(len(plan.tasks), 0)
+
+    def test_loads_repository_ristra_execution_data(self) -> None:
+        path = Path(__file__).resolve().parents[1] / "data" / "ristra.yaml"
+
+        plan = load_plan(path)
+
+        self.assertEqual(plan.portfolio, "Advanced Simulation and Computing (NA-114)")
+        self.assertEqual(
+            [item.label for item in plan.execution],
+            [
+                "Checkpoint/Restart",
+                "Device Mutator Support",
+                "Multi-Material Data Structures",
+                "Execution Model Enhancements",
+            ],
+        )
+        self.assertIn("Delivery: June 1st, 2026.", plan.execution[0].description)
+        self.assertGreater(len(plan.tasks), 0)
+
+    def test_rejects_invalid_execution_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    execution:
+                      - label: Missing Description
+                    tasks:
+                      - id: A1
+                        label: A
+                        start: M1Q3FY26
+                        deadline: M1Q3FY26
+                        expected_duration: 1
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep the task small.
+                        status: pending
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_plan(path)
 
     def test_rejects_missing_dependency(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -790,9 +873,18 @@ class PlannerTests(unittest.TestCase):
                       - Casey
                     summary: >
                       Document-level planning context.
+                    execution:
+                      - label: Deliverable A
+                        description: >
+                          Document execution detail.
                     tasks:
                       - id: A1
                         label: A
+                        bnr: DP1518130
+                        cost: $100K
+                        funding_status: funded
+                        type: labor
+                        tags: checkpoint, restart
                         start: M1Q3FY26
                         deadline: M3Q3FY26
                         expected_duration: 2
@@ -839,11 +931,22 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Project Points of Contact", document)
         self.assertIn("Document-level planning context.", document)
         self.assertIn("Execution", document)
+        self.assertIn("Deliverable A", document)
+        self.assertIn("Document execution detail.", document)
         self.assertIn("Tasks", document)
         self.assertIn("Resourcing/Schedule", document)
         self.assertIn("Task A.1", document)
         self.assertIn("Task B.1", document)
         self.assertNotIn("LONG_IDENTIFIER_FOR_TABLE", document)
+        self.assertIn("BNR", document)
+        self.assertIn("DP1518130", document)
+        self.assertIn("Cost", document)
+        self.assertIn("$100K", document)
+        self.assertIn("Funding", document)
+        self.assertIn("funded", document)
+        self.assertIn("Type", document)
+        self.assertIn("labor", document)
+        self.assertIn("Tags: checkpoint, restart", document)
         self.assertIn("Start", document)
         self.assertIn("Deadline", document)
         self.assertIn("Duration", document)
@@ -875,6 +978,10 @@ class PlannerTests(unittest.TestCase):
                         dependencies: []
                       - id: B2
                         label: B
+                        bnr: DP1518130
+                        cost: $100K
+                        funding_status: funded
+                        type: labor
                         start: M2Q3FY26
                         deadline: M3Q3FY26
                         expected_duration: 1
@@ -902,6 +1009,7 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Portfolio A", svg)
         self.assertIn("M1Q3FY26 to M3Q3FY26", svg)
         self.assertIn("duration 1 month(s)", svg)
+        self.assertIn("BNR: DP1518130; Cost: $100K; Funding: funded; Type: labor", svg)
         self.assertIn("risk high/delivery", svg)
         self.assertIn("marker-end=\"url(#arrow)\"", svg)
         self.assertIn("id B2", svg)
@@ -941,6 +1049,21 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("risk extreme/delivery", svg)
         self.assertIn('fill="#CDB4DB"', svg)
         self.assertIn('fill="#D00000"', svg)
+
+    def test_loads_ristra_task_attributes(self) -> None:
+        source = Path(__file__).resolve().parents[1] / "data" / "ristra.yaml"
+
+        plan = load_plan(source)
+
+        self.assertGreater(len(plan.tasks), 0)
+        self.assertTrue(all(task.bnr == "DP1518130" for task in plan.tasks))
+        self.assertEqual(
+            sorted(task.cost for task in plan.tasks),
+            ["$100K", "$100K", "$100K", "$200K", "$400K", "$400K"],
+        )
+        self.assertTrue(all(task.funding_status == "funded" for task in plan.tasks))
+        self.assertTrue(all(task.type == "labor" for task in plan.tasks))
+        self.assertTrue(all(task.tags == () for task in plan.tasks))
 
 
 if __name__ == "__main__":

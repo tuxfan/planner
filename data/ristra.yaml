@@ -1,0 +1,259 @@
+portfolio: Advanced Simulation and Computing (NA-114)
+
+managers:
+  - Jimmy Fung
+  - John Patchett
+
+pocs:
+  - Ben Bergen
+  - Jonathan Pieterialla-Graham
+  - Chris Malone
+  - Scott Pakin
+
+summary: >
+  This is a plan to deliver on several outstanding feature requests to be
+  delivered to the Ristra project for use in the moya application. The
+  deliverables and timeline are detailed below.
+
+execution:
+  - label: Checkpoint/Restart  
+    description: >
+      Provide a native checkpoint/restart capability in FleCSI that supports
+      recovery of all topology instances and user data. Delivery of this
+      capability will be split into three parts:
+
+      1.) MPI-only support for only the required topologies for moya with a
+      basic interface for writing and reading user-defined simulation data.
+      Much of this work has been done in
+      [MR 621](https://re-git.lanl.gov/flecsi/flecsi/-/merge_requests/621).
+      Delivery: June 1st, 2026.
+
+      2.) MPI-only with support for all topology types with an improved
+      user-defined simulation data interface (requires iteration with the
+      Ristra team).
+      Delivery: September 30th, 2026.
+
+      3.) Support for all backends, i.e., add support for Legion and HPX.
+      Delivery: January 1st, 2027.
+
+      This deliverable will require some interaction between the FleCSI and
+      Ristra teams to assist in integration (FleCSI) and to
+      communicate feedback on the user interface (Ristra).
+
+  - label: Device Mutator Support
+    description: >
+      Refactor ragged data layout to add mutator support for GPU. This is a
+      challenging design space with many tradeoffs. The primary challenge is in
+      designing a useful interface that mimics dynamic field resizing using
+      data from a fixed-size data allocation. This may require the development
+      of a new kind of mutator that is taylored to the multi-material use case,
+      and may be a departure from the existing vector/map practice. Significant
+      discussion and iteration will be required between the FleCSI and Ristra
+      teams.
+
+      1.) Work on this deliverable will start from the existing mutator
+      design in
+      [MR 756](https://re-git.lanl.gov/flecsi/flecsi/-/merge_requests/756)
+      and
+      [MR 717](https://re-git.lanl.gov/flecsi/flecsi/-/merge_requests/717)
+      Delivery: June 1st, 2026.
+
+      2.) There will be two efforts to understand and define requirements for a
+      the new mutator type: Chris Malone will continue work on an existing
+      strategy in the moya application, and The HARD team will pursue a similar
+      track with the 2026 Co-Design Summer School students. Preliminary
+      discussions indicate very similar requirements for these efforts.
+      However, requirements will need to be updated at the end of this phase to
+      determine the scope and capability for the new mutator type. It will also
+      be necessary to measure performance and identify strategies for
+      improvement.
+      Delivery: September 30th, 2026
+
+      Additional tasks and deliverables will be added after the second phase is
+      complete.
+
+  - label: Multi-Material Data Structures
+    description: >
+      Due to improvements in our understanding of the requirements for
+      multi-material/multi-model data representations, this deliverable is
+      initially less complex than previously thought, i.e., it is likely that
+      ragged and sparse data layouts (in conjuction with Singularity-EOS) will
+      be sufficient for Ristra's needs. Delivery of the above mentioned Device
+      Mutator Support will satisfy this deliverable. That said, we will
+      continue to investigate different use cases to test this assumption. The
+      primary deliverable of this task will be an updated set of requirements
+      for multi-material/multi-model data structure support that covers all
+      known cases.
+      Delivery: September 30th, 2026.
+
+  - label: Execution Model Enhancements
+    description: >
+      Changes to allow concurrent execution of CPU and GPU tasks through
+      Kokkos. The components of this deliverable are exec::cpu, exec::omp, and
+      exec::gpu (FleCSI 2.4.0 from June 2025), more efficient MPI tasks, and
+      automatic choice of execution space (task variants). Many of the
+      requirements for this deliverable are already realeased in FleCSI 2.4.0.
+      Execution of this deliverable will primarily consist of assisting the
+      Ristra team to integrate the new execution model.
+      Delivery: Ongoing.
+
+tasks:
+
+  - id: CR_MPI_ONLY_PARTIAL
+    label: Checkpoint/Restart MPI-Only (essential topologies)
+    bnr: DP1518130
+    type: labor
+    funding_status: funded
+    cost: $100K
+    tags: None
+    start: M2Q3FY26
+    deadline: M3Q3FY26
+    expected duration: 1
+    milestone: Phase I
+    priority: urgent
+    risk level: low
+    risk type: technical
+    risk mitigation: Additional staffing on dev-ops to free-up Richard
+    status: active
+    description: >
+      Rebase and update of existing
+      [MR 621](https://re-git.lanl.gov/flecsi/flecsi/-/merge_requests/621)
+      to compile against current develop branch. Work with Davis to bring up to
+      normal coding standards (excepting backend completeness). Provide build
+      support through Kessel to make branch/version available to Ristra team.
+    project: FleCSI
+    dependencies: []
+
+  - id: CR_MPI_ONLY_FULL
+    label: Checkpoint/Restart MPI-Only (all topologies)
+    bnr: DP1518130
+    type: labor
+    funding_status: funded
+    cost: $400K
+    tags: None
+    start: M3Q3FY26
+    deadline: M2Q4FY26
+    expected duration: 2
+    milestone: Phase II
+    priority: high
+    risk level: medium
+    risk type: technical, schedule
+    risk mitigation: >
+      technical: Work with Julien to understand differences in ntree
+      implementation.
+      schedule: Additional time from Julien to meet deadline.
+    status: pending
+    description: >
+      Add checkpoint/restart capability for all topologies (still MPI-only).
+      This work will primarily be focused on adding support for the ntree
+      topology.
+    project: FleCSI
+    dependencies:
+      - CR_MPI_ONLY_PARTIAL
+
+  - id: CR_COMPLETE
+    label: Checkpoint/Restart (all topologies, all backends)
+    bnr: DP1518130
+    type: labor
+    funding_status: funded
+    cost: $100K
+    tags: None
+    start: M1Q1FY27
+    deadline: M3Q1FY27
+    expected duration: 3
+    milestone: Phase III
+    priority: high
+    risk level: medium
+    risk type: technical, schedule
+    risk mitigation: >
+      technical: Engage Legion and HPX developers for technical questions.
+      schedule: Focused push, e.g., stage a team hack-a-thon to complete.
+    status: pending
+    description: >
+      Extend checkpoint/restart capability to all backends.
+    project: FleCSI
+    dependencies:
+      - CR_MPI_ONLY_PARTIAL
+      - CR_MPI_ONLY_FULL
+  
+  - id: DEVICE_MUTATOR_EXISTING
+    label: Device Mutator Investigation
+    bnr: DP1518130
+    type: labor
+    funding_status: funded
+    cost: $200K
+    tags: None
+    start: M2Q3FY26
+    deadline: M3Q4FY26
+    expected duration: 4
+    milestone: FYE
+    priority: high
+    risk level: high
+    risk type: technical
+    risk mitigation: >
+      technical: Interaction with the FleCSI team to work through design
+      constraints and provide feedback on new mutator interface.
+    status: active
+    description: >
+      Continue investigation of requirements and interface design for
+      multi-material/multi-model applications using existing CPU-only support.
+    project: TPA (Task-Parallel Applications) & Ristra
+    dependencies: []
+
+  - id: DEVICE_MUTATOR_NEW
+    label: New Device Mutator Development
+    bnr: DP1518130
+    type: labor
+    funding_status: funded
+    cost: $400K
+    tags: None
+    start: M1Q1FY27
+    deadline: M3Q1FY27
+    expected duration: 3
+    milestone: CYE
+    priority: high
+    risk level: high
+    risk type: technical
+    risk mitigation: >
+      technical: The primary technical risk is performance. Mitigation will
+      depend on being able to develop better strategies for data management
+      that increase performance. Some possible strategies include pactch-based
+      sparsity (where there are multiple materials, always add some fixed
+      number of slots), and added structure, i.e., modal updates that
+      explicitly structure execution of mutator operations. Performance will be
+      tightly coupled to the specific data access patterns and interface, so it
+      is difficult to predict which strategies might be necessary.
+    status: pending
+    description: >
+      Develop a new mutator type with specific support for
+      multi-material/multi-model application problems. The requirements and
+      design of this type will be established as a deliverable of the task
+      dependencies.
+    project: FleCSI
+    dependencies:
+      - DEVICE_MUTATOR_EXISTING
+  
+  - id: EXECUTION_MODEL
+    label: APU Support
+    bnr: DP1518130
+    type: labor
+    funding_status: funded
+    cost: $100K
+    tags: None
+    start: M2Q3FY26
+    deadline: M3Q4FY26
+    expected duration: 5
+    milestone: FYE
+    priority: high
+    risk level: low
+    risk type: technical
+    risk mitigation: >
+      technical: Dedicate additional support staff to help the Ristra team
+      integrate the new execution model. This is very low risk because we have
+      ample experience from other codes.
+    status: active
+    description: >
+      Update moya to use FleCSI's new execution model to execute tasks across
+      multiple execution spaces.
+    project: TPS (Task-Parallel Specializations) & Ristra
+    dependencies: []

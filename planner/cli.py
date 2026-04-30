@@ -146,7 +146,16 @@ def _resolve_paths(
 
 
 def _print_plan_metadata(plan) -> None:
-    if not any((plan.project, plan.portfolio, plan.managers, plan.pocs, plan.summary)):
+    if not any(
+        (
+            plan.project,
+            plan.portfolio,
+            plan.managers,
+            plan.pocs,
+            plan.summary,
+            plan.execution,
+        )
+    ):
         return
     if plan.project:
         print(f"Project: {plan.project}")
@@ -161,18 +170,28 @@ def _print_plan_metadata(plan) -> None:
         for line in plan.summary.splitlines():
             if line.strip():
                 print(f"  {line.strip()}")
+    if plan.execution:
+        print("Execution:")
+        for item in plan.execution:
+            print(f"  {item.label}:")
+            for line in item.description.splitlines():
+                if line.strip():
+                    print(f"    {line.strip()}")
     print()
 
 
 def _print_tasks(tasks) -> None:
     for task in tasks:
         dependencies = ", ".join(task.dependencies) if task.dependencies else "-"
+        metadata = _task_metadata(task)
         print(
             f"{task.start} -> {task.deadline} | "
             f"{task.expected_duration} month(s) | {task.project} | {task.milestone} | "
             f"{task.priority} | risk={task.risk_level}/{task.risk_type} | "
             f"status={task.status} | {task.label} [{task.id}]"
         )
+        if metadata:
+            print(f"  attributes: {metadata}")
         print(f"  mitigation: {task.risk_mitigation}")
         print(f"  dependencies (ids): {dependencies}")
         print(f"  description: {task.description}")
@@ -192,6 +211,7 @@ def _print_summary(tasks) -> None:
 def _print_schedule(tasks) -> None:
     for position, state, task in build_schedule(tasks):
         dependencies = ", ".join(task.dependencies) if task.dependencies else "-"
+        metadata = _task_metadata(task)
         print(
             f"{position:02d} | {state} | start={task.start} | "
             f"deadline={task.deadline} | duration={task.expected_duration} month(s) | "
@@ -199,9 +219,26 @@ def _print_schedule(tasks) -> None:
         )
         print(f"  project: {task.project}")
         print(f"  milestone: {task.milestone}")
+        if metadata:
+            print(f"  attributes: {metadata}")
         print(f"  risk: {task.risk_level}/{task.risk_type}")
         print(f"  mitigation: {task.risk_mitigation}")
         print(f"  dependencies (ids): {dependencies}")
+
+
+def _task_metadata(task) -> str:
+    parts = []
+    if task.bnr:
+        parts.append(f"bnr={task.bnr}")
+    if task.cost:
+        parts.append(f"cost={task.cost}")
+    if task.funding_status:
+        parts.append(f"funding={task.funding_status}")
+    if task.type:
+        parts.append(f"type={task.type}")
+    if task.tags:
+        parts.append("tags=" + ", ".join(task.tags))
+    return " | ".join(parts)
 
 
 if __name__ == "__main__":

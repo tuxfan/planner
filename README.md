@@ -9,11 +9,17 @@ A plan can include optional top-level project metadata:
 - `managers`: list of manager names.
 - `pocs`: list of point-of-contact names.
 - `summary`: high-level plan summary.
+- `execution`: list of execution/deliverable narratives, each with `label` and `description`.
 
 Each task supports these fields:
 
 - `id`: required string task id. Must contain only letters, numbers, or underscores, with no spaces.
 - `label`: required string display name for the task.
+- `bnr`: optional budget and reporting identifier.
+- `cost`: optional task cost label, for example `$100K`.
+- `funding status` or `funding_status`: optional funding state label.
+- `type`: optional task type label.
+- `tags`: optional comma-separated string or list of task tags.
 - `start`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
 - `deadline`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
 - `expected duration` or `expected_duration`: required positive whole number of months.
@@ -61,7 +67,7 @@ The legacy `tuxfan-planner` command remains available as an alias.
 
 ## YAML format
 
-Top-level can be either a list of tasks or a mapping with a `tasks` key. The mapping form can also include plan-level metadata such as `portfolio`, `project`, `managers`, `pocs`, and `summary`.
+Top-level can be either a list of tasks or a mapping with a `tasks` key. The mapping form can also include plan-level metadata such as `portfolio`, `project`, `managers`, `pocs`, `summary`, and `execution`.
 
 ```yaml
 portfolio: Advanced Simulation and Computing
@@ -72,10 +78,20 @@ pocs:
   - Casey Example, PI
 summary: >
   High-level planning context for the task collection.
+execution:
+  - label: Deliverable A
+    description: >
+      Narrative execution detail for this deliverable.
 
 tasks:
   - id: DraftArchitecture
     label: Draft architecture
+    bnr: DP1518130
+    cost: $100K
+    funding status: funded
+    type: labor
+    tags:
+      - architecture
     start: M1Q3FY26
     deadline: M2Q3FY26
     expected duration: 2
@@ -117,10 +133,21 @@ PLAN = {
     "managers": ["Alice Example"],
     "pocs": ["Casey Example, PI"],
     "summary": "High-level planning context for the task collection.",
+    "execution": [
+        {
+            "label": "Deliverable A",
+            "description": "Narrative execution detail for this deliverable.",
+        }
+    ],
     "tasks": [
         {
             "id": "DraftArchitecture",
             "label": "Draft architecture",
+            "bnr": "DP1518130",
+            "cost": "$100K",
+            "funding_status": "funded",
+            "type": "labor",
+            "tags": ["architecture"],
             "start": "M1Q3FY26",
             "deadline": "M2Q3FY26",
             "expected_duration": 2,

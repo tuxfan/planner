@@ -12,7 +12,8 @@ It loads task definitions from YAML or Python files, validates them, prints summ
 - Dependency: `PyYAML>=6.0`
 - CLI entry point: `project-planner = planner.cli:main`
 - Example data: `planner/examples/tasks.yaml` and `planner/examples/tasks.py`
-- Top-level plan metadata: `portfolio`, `project`, `managers`, `pocs`, and `summary`
+- Top-level plan metadata: `portfolio`, `project`, `managers`, `pocs`, `summary`, and `execution`
+- Optional task metadata: `bnr`, `cost`, `funding_status`, `type`, and `tags`
 
 ## Repository Map
 
@@ -33,10 +34,12 @@ Plan files can be a raw task list or a mapping with `tasks` plus optional metada
 - `managers`: list of manager names
 - `pocs`: list of point-of-contact names
 - `summary`: high-level plan summary
+- `execution`: list of execution/deliverable narratives with `label` and `description`
 
 Each task includes:
 
 - `id`, `label`
+- `bnr`, `cost`, `funding_status`, `type`, `tags`
 - `start`, `deadline`
 - `expected_duration`
 - `milestone`, `priority`
@@ -46,24 +49,29 @@ Each task includes:
 
 Accepted aliases currently handled in code:
 
+- `bnr` -> `bnr`
+- `cost` -> `cost`
 - `start` -> `start`
 - `start month` -> `start`
 - `deadline` -> `deadline`
 - `deadline month` -> `deadline`
 - `expected duration` -> `expected_duration`
+- `funding status` -> `funding_status`
 - `risk level` -> `risk_level`
 - `risk type` -> `risk_type`
 - `risk mitigation` -> `risk_mitigation`
+- `tags` -> `tags`
+- `type` -> `type`
 
 Validation rules currently enforced:
 
 - required fields must all be present
-- task ids must match `^[A-Za-z0-9]+$`
+- task ids must match `^[A-Za-z0-9_]+$`
 - `dependencies` must be a list
-- `start` and `deadline` must use full calendar month names
+- `start` and `deadline` must use fiscal period values like `M1Q1FY26`
 - `expected_duration` must be a positive integer
-- `start` cannot be after `deadline` in calendar month order
-- `status` must be one of `todo`, `in_progress`, `done`
+- `start` cannot be after `deadline` in fiscal period order
+- `status` must be one of `pending`, `active`, `ongoing`, `blocked`, `complete`
 - dependency ids must exist
 - dependency cycles are rejected
 - validated task output is sorted by deadline month, project, label, id
@@ -73,7 +81,7 @@ Validation rules currently enforced:
 - `list` prints task details in validated sort order.
 - `summary` groups counts by project and milestone.
 - `schedule` uses dependency order and emits `COMPLETE`, `ACTIVE`, `READY`, or `BLOCKED`.
-- `export-docx` writes a minimal Word document directly as zipped XML, using a reference-style narrative plan layout with compact per-project task numbers in the summary table.
+- `export-docx` writes a minimal Word document directly as zipped XML, using a reference-style narrative plan layout with execution narratives and compact per-project task numbers in the summary table.
 - `export-svg` renders project lanes, dependency arrows, and task cards with status/risk/priority colors.
 - `load_plan()` returns a `ProjectPlan` with validated tasks plus optional metadata; `load_tasks()` remains as a backward-compatible task-list wrapper.
 
@@ -114,3 +122,11 @@ Validation rules currently enforced:
 - Added tests for metadata loading from YAML/Python, exporter output, and validation of `data/tasks.yaml`.
 - Updated `.docx` export formatting to more closely match `data/example.docx`: title/metadata labels, project summary, execution/activity sections, grouped task descriptions, a landscape task summary table, and a risk mitigation section.
 - Replaced raw task ids in the `.docx` table and dependency display with generated per-project task numbers such as `Task A.1`, avoiding layout issues from long ids.
+
+### 2026-04-30
+
+- Added first-class support for top-level `execution` metadata as a list of labeled narrative items.
+- Updated YAML/Python loading, CLI metadata output, `.docx` execution rendering, README documentation, and tests for `data/ristra.yaml`.
+- Added first-class optional task attributes from `data/ristra.yaml`: `bnr`, `funding_status`, `type`, and `tags`.
+- Threaded the new task attributes through YAML/Python loading, CLI list/schedule output, `.docx` task descriptions and summary tables, `.svg` task cards, README documentation, and unit coverage.
+- Added first-class optional `cost` task metadata from `data/ristra.yaml`, including CLI/export rendering, README documentation, and tests.

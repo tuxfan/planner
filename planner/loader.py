@@ -5,10 +5,10 @@ import runpy
 
 import yaml
 
-from .models import ProjectPlan, Task, ValidationError, validate_tasks
+from .models import ExecutionItem, ProjectPlan, Task, ValidationError, validate_tasks
 
 
-METADATA_KEYS = {"portfolio", "project", "managers", "pocs", "summary"}
+METADATA_KEYS = {"portfolio", "project", "managers", "pocs", "summary", "execution"}
 
 
 def load_tasks(path: str | Path) -> list[Task]:
@@ -78,6 +78,7 @@ def _coerce_plan(data: object, path: Path) -> ProjectPlan:
         managers=_coerce_optional_text_list(data, "managers"),
         pocs=_coerce_optional_text_list(data, "pocs"),
         summary=_coerce_optional_text(data, "summary"),
+        execution=_coerce_execution_items(data),
         metadata=metadata,
     )
 
@@ -112,3 +113,15 @@ def _coerce_optional_text_list(data: dict, key: str) -> tuple[str, ...]:
     if not isinstance(value, list):
         raise ValidationError(f"Top-level '{key}' must be a list of text values.")
     return tuple(str(item).strip() for item in value if str(item).strip())
+
+
+def _coerce_execution_items(data: dict) -> tuple[ExecutionItem, ...]:
+    value = data.get("execution", [])
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ValidationError("Top-level 'execution' must be a list of items.")
+    return tuple(
+        ExecutionItem.from_mapping(item, index=index)
+        for index, item in enumerate(value, 1)
+    )

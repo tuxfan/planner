@@ -97,11 +97,7 @@ def _document_xml(
     body.extend(
         [
             _paragraph("Execution:", style="Heading1"),
-            _labeled_paragraph(
-                "Activities",
-                _execution_summary(tasks),
-            ),
-            *_activity_paragraphs(tasks),
+            *_execution_paragraphs(plan, tasks),
             _paragraph("Tasks:", style="Heading1"),
         ]
     )
@@ -114,7 +110,7 @@ def _document_xml(
             body.append(
                 _labeled_paragraph(
                     f"{number} {task.label}",
-                    task.description,
+                    _task_description(task),
                     style="ListParagraph",
                 )
             )
@@ -235,6 +231,22 @@ def _execution_summary(tasks: list[Task]) -> str:
     )
 
 
+def _execution_paragraphs(plan: ProjectPlan, tasks: list[Task]) -> list[str]:
+    if plan.execution:
+        return [
+            _labeled_paragraph(item.label, item.description, style="ListParagraph")
+            for item in plan.execution
+        ]
+
+    return [
+        _labeled_paragraph(
+            "Activities",
+            _execution_summary(tasks),
+        ),
+        *_activity_paragraphs(tasks),
+    ]
+
+
 def _activity_paragraphs(tasks: list[Task]) -> list[str]:
     paragraphs = []
     project_letters = _project_letters(tasks)
@@ -273,12 +285,16 @@ def _task_table(
         "Deadline",
         "Duration",
         "Status",
+        "BNR",
+        "Cost",
+        "Funding",
+        "Type",
         "Priority",
         "Risk",
         "Schedule",
         "Dependencies",
     ]
-    widths = [1000, 1900, 850, 850, 850, 900, 900, 950, 950, 1250]
+    widths = [800, 1350, 650, 650, 650, 750, 750, 650, 700, 700, 800, 750, 800, 900]
     rows = [_table_row(headers, widths, header=True)]
     for task in tasks:
         rows.append(
@@ -290,6 +306,10 @@ def _task_table(
                     task.deadline,
                     f"{task.expected_duration} mo.",
                     task.status,
+                    task.bnr or "-",
+                    task.cost or "-",
+                    task.funding_status or "-",
+                    task.type or "-",
                     task.priority,
                     f"{task.risk_level}/{task.risk_type}",
                     schedule_state[task.id],
@@ -324,6 +344,28 @@ def _dependency_numbers(task: Task, task_numbers: dict[str, str]) -> str:
     )
 
 
+def _task_description(task: Task) -> str:
+    attributes = _task_attribute_summary(task)
+    if not attributes:
+        return task.description
+    return f"{task.description} ({attributes})"
+
+
+def _task_attribute_summary(task: Task) -> str:
+    parts = []
+    if task.bnr:
+        parts.append(f"BNR: {task.bnr}")
+    if task.cost:
+        parts.append(f"Cost: {task.cost}")
+    if task.funding_status:
+        parts.append(f"Funding: {task.funding_status}")
+    if task.type:
+        parts.append(f"Type: {task.type}")
+    if task.tags:
+        parts.append("Tags: " + ", ".join(task.tags))
+    return "; ".join(parts)
+
+
 def _table_row(values: list[str], widths: list[int], *, header: bool = False) -> str:
     cells = "".join(
         _table_cell(value, width=width, header=header)
@@ -356,7 +398,7 @@ def _svg_document(
     project_order = sorted({task.project for task in tasks})
     lanes = {project: index for index, project in enumerate(project_order)}
     card_width = 260
-    card_height = 148
+    card_height = 178
     left_padding = 170
     top_padding = 110
     x_gap = 120
@@ -402,7 +444,7 @@ def _svg_document(
         stroke = RISK_COLORS.get(task.risk_level.lower(), "#495057")
         accent = PRIORITY_COLORS.get(task.priority.lower(), "#495057")
         dependencies = ", ".join(task.dependencies) if task.dependencies else "None"
-        mitigation = _wrap_text(task.risk_mitigation, 34)[:2]
+        attributes = _task_attribute_summary(task)
         description = _wrap_text(task.description, 34)[:2]
         text_y = y + 28
         elements.extend(
@@ -419,13 +461,13 @@ def _svg_document(
                 f'<text x="{x + 22}" y="{text_y + 112}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">deps {escape(dependencies)}</text>',
             ]
         )
+        if attributes:
+            elements.append(
+                f'<text x="{x + 22}" y="{text_y + 130}" font-family="Arial, sans-serif" font-size="11" fill="#343A40">{escape(attributes)}</text>'
+            )
         for index, line in enumerate(description):
             elements.append(
-                f'<text x="{x + 22}" y="{text_y + 130 + index * 14}" font-family="Arial, sans-serif" font-size="11" fill="#495057">{escape(line)}</text>'
-            )
-        for index, line in enumerate(mitigation):
-            elements.append(
-                f'<text x="{x + 22}" y="{text_y + 158 + index * 14}" font-family="Arial, sans-serif" font-size="11" fill="#0B6E4F">{escape("mitigate: " + line if index == 0 else line)}</text>'
+                f'<text x="{x + 22}" y="{text_y + 148 + index * 14}" font-family="Arial, sans-serif" font-size="11" fill="#495057">{escape(line)}</text>'
             )
         elements.append("</g>")
 

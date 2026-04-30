@@ -27,18 +27,24 @@ REQUIRED_FIELDS = {
 }
 
 FIELD_ALIASES = {
+    "bnr": "bnr",
+    "cost": "cost",
     "start": "start",
     "start month": "start",
     "deadline": "deadline",
     "deadline month": "deadline",
     "expected duration": "expected_duration",
     "expected_duration": "expected_duration",
+    "funding status": "funding_status",
+    "funding_status": "funding_status",
     "risk level": "risk_level",
     "risk_level": "risk_level",
     "risk type": "risk_type",
     "risk_type": "risk_type",
     "risk mitigation": "risk_mitigation",
     "risk_mitigation": "risk_mitigation",
+    "tags": "tags",
+    "type": "type",
 }
 
 TASK_ID_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
@@ -64,6 +70,11 @@ class Task:
     description: str
     project: str
     dependencies: tuple[str, ...]
+    bnr: str = ""
+    cost: str = ""
+    funding_status: str = ""
+    type: str = ""
+    tags: tuple[str, ...] = ()
 
     @classmethod
     def from_mapping(cls, raw: dict, *, index: int | None = None) -> "Task":
@@ -154,7 +165,41 @@ class Task:
             description=str(normalized["description"]).strip(),
             project=str(normalized["project"]).strip(),
             dependencies=tuple(str(item).strip() for item in dependencies),
+            bnr=_coerce_optional_task_text(normalized, "bnr"),
+            cost=_coerce_optional_task_text(normalized, "cost"),
+            funding_status=_coerce_optional_task_text(normalized, "funding_status"),
+            type=_coerce_optional_task_text(normalized, "type"),
+            tags=_coerce_optional_task_tags(normalized),
         )
+
+
+@dataclass(frozen=True)
+class ExecutionItem:
+    label: str
+    description: str
+
+    @classmethod
+    def from_mapping(cls, raw: dict, *, index: int | None = None) -> "ExecutionItem":
+        if not isinstance(raw, dict):
+            raise ValidationError(f"Execution item #{index or '?'} must be a mapping.")
+
+        missing = {"label", "description"} - raw.keys()
+        if missing:
+            raise ValidationError(
+                f"Execution item #{index or '?'} is missing fields: "
+                + ", ".join(sorted(missing))
+            )
+
+        label = str(raw["label"]).strip()
+        description = str(raw["description"]).strip()
+        if not label:
+            raise ValidationError(f"Execution item #{index or '?'} has an empty label.")
+        if not description:
+            raise ValidationError(
+                f"Execution item '{label}' has an empty description."
+            )
+
+        return cls(label=label, description=description)
 
 
 @dataclass(frozen=True)
@@ -165,6 +210,7 @@ class ProjectPlan:
     managers: tuple[str, ...] = ()
     pocs: tuple[str, ...] = ()
     summary: str = ""
+    execution: tuple[ExecutionItem, ...] = ()
     metadata: Mapping[str, object] = field(default_factory=dict)
 
     @property
@@ -187,6 +233,34 @@ def _parse_fiscal_period(value: object, *, field_name: str, label: str) -> str:
 
     month_in_quarter, quarter, fiscal_year = match.groups()
     return f"M{month_in_quarter}Q{quarter}FY{fiscal_year}"
+
+
+def _coerce_optional_task_text(raw: Mapping[str, object], key: str) -> str:
+    value = raw.get(key, "")
+    if value is None:
+        return ""
+    if isinstance(value, (list, dict)):
+        raise ValidationError(f"Task field '{key}' must be text when provided.")
+    text = str(value).strip()
+    if text.lower() in {"none", "null"}:
+        return ""
+    return text
+
+
+def _coerce_optional_task_tags(raw: Mapping[str, object]) -> tuple[str, ...]:
+    if "tags" not in raw:
+        return ()
+    value = raw["tags"]
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        text = value.strip()
+        if not text or text.lower() in {"none", "null"}:
+            return ()
+        return tuple(part.strip() for part in text.split(",") if part.strip())
+    if not isinstance(value, list):
+        raise ValidationError("Task field 'tags' must be text or a list when provided.")
+    return tuple(str(item).strip() for item in value if str(item).strip())
 
 
 def _fiscal_period_sort_key(value: str) -> tuple[int, int]:
