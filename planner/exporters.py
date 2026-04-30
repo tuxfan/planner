@@ -30,34 +30,13 @@ PRIORITY_COLORS = {
     "urgent": "#D00000",
 }
 
+DOCX_PAGE_WIDTH = 15840
+DOCX_MARGIN = 720
+DOCX_CONTENT_WIDTH = DOCX_PAGE_WIDTH - (DOCX_MARGIN * 2)
 
-TASK_TABLE_BASE_COLUMNS = (
+TASK_TABLE_REQUIRED_COLUMNS = (
     ("Task", 800, lambda task, task_numbers, schedule_state: task_numbers[task.id]),
     ("Project", 1350, lambda task, task_numbers, schedule_state: task.project),
-    ("Start", 650, lambda task, task_numbers, schedule_state: task.start),
-    ("Deadline", 650, lambda task, task_numbers, schedule_state: task.deadline),
-    (
-        "Duration",
-        650,
-        lambda task, task_numbers, schedule_state: f"{task.expected_duration} mo.",
-    ),
-    ("Status", 750, lambda task, task_numbers, schedule_state: task.status),
-    ("Priority", 800, lambda task, task_numbers, schedule_state: task.priority),
-    (
-        "Risk",
-        750,
-        lambda task, task_numbers, schedule_state: f"{task.risk_level}/{task.risk_type}",
-    ),
-    (
-        "Schedule",
-        800,
-        lambda task, task_numbers, schedule_state: schedule_state[task.id],
-    ),
-    (
-        "Dependencies",
-        900,
-        lambda task, task_numbers, schedule_state: _dependency_numbers(task, task_numbers),
-    ),
 )
 
 TASK_TABLE_ATTRIBUTE_COLUMNS = {
@@ -166,7 +145,7 @@ def _document_xml(
             body.append(
                 _labeled_paragraph(
                     f"{number} {task.label}",
-                    _task_description(task),
+                    _task_description(task, export_options),
                     style="ListParagraph",
                 )
             )
@@ -337,42 +316,46 @@ def _task_table(
     export_options: ExportOptions,
 ) -> str:
     schedule_state = {task.id: state for _, state, task in schedule}
-    attribute_columns = [
-        TASK_TABLE_ATTRIBUTE_COLUMNS[attribute]
-        for attribute in export_options.task_table_attributes
-    ]
+    configured_columns = export_options.resolved_task_table_columns()
     columns = [
-        *TASK_TABLE_BASE_COLUMNS[:6],
+        *[
+            (header, width, formatter, "left")
+            for header, width, formatter in TASK_TABLE_REQUIRED_COLUMNS
+        ],
         *[
             (
-                header,
+                column.label or header,
                 width,
                 lambda task,
                 task_numbers,
                 schedule_state,
                 formatter=formatter: formatter(task),
+                column.alignment,
             )
-            for header, width, formatter in attribute_columns
+            for column in configured_columns
+            for header, width, formatter in [TASK_TABLE_ATTRIBUTE_COLUMNS[column.attribute]]
         ],
-        *TASK_TABLE_BASE_COLUMNS[6:],
     ]
-    headers = [header for header, _, _ in columns]
-    widths = [width for _, width, _ in columns]
-    rows = [_table_row(headers, widths, header=True)]
+    headers = [header for header, _, _, _ in columns]
+    widths = _scaled_table_widths([width for _, width, _, _ in columns])
+    alignments = [alignment for _, _, _, alignment in columns]
+    rows = [_table_row(headers, widths, alignments, header=True)]
     for task in tasks:
         rows.append(
             _table_row(
                 [
                     formatter(task, task_numbers, schedule_state)
-                    for _, _, formatter in columns
+                    for _, _, formatter, _ in columns
                 ],
                 widths,
+                alignments,
             )
         )
     return (
         "<w:tbl>"
         "<w:tblPr>"
-        '<w:tblW w:w="0" w:type="auto"/>'
+        f'<w:tblW w:w="{DOCX_CONTENT_WIDTH}" w:type="dxa"/>'
+        '<w:tblLayout w:type="fixed"/>'
         '<w:tblLook w:firstRow="1" w:noHBand="0" w:noVBand="1"/>'
         "<w:tblBorders>"
         "<w:top w:val=\"single\" w:sz=\"4\"/>"
@@ -382,9 +365,25 @@ def _task_table(
         "<w:insideH w:val=\"single\" w:sz=\"4\"/>"
         "<w:insideV w:val=\"single\" w:sz=\"4\"/>"
         "</w:tblBorders></w:tblPr>"
+        f"{_table_grid(widths)}"
         f"{''.join(rows)}"
         "</w:tbl>"
     )
+
+
+def _scaled_table_widths(widths: list[int]) -> list[int]:
+    total = sum(widths)
+    if total <= 0:
+        return widths
+
+    scaled = [max(1, (width * DOCX_CONTENT_WIDTH) // total) for width in widths]
+    scaled[-1] += DOCX_CONTENT_WIDTH - sum(scaled)
+    return scaled
+
+
+def _table_grid(widths: list[int]) -> str:
+    columns = "".join(f'<w:gridCol w:w="{width}"/>' for width in widths)
+    return f"<w:tblGrid>{columns}</w:tblGrid>"
 
 
 def _dependency_numbers(task: Task, task_numbers: dict[str, str]) -> str:
@@ -395,43 +394,65 @@ def _dependency_numbers(task: Task, task_numbers: dict[str, str]) -> str:
     )
 
 
-def _task_description(task: Task) -> str:
-    attributes = _task_attribute_summary(task)
+def _task_description(
+    task: Task, export_options: ExportOptions | None = None
+) -> str:
+    attributes = _task_attribute_summary(task, export_options)
     if not attributes:
         return task.description
     return f"{task.description} ({attributes})"
 
 
-def _task_attribute_summary(task: Task) -> str:
+def _task_attribute_summary(
+    task: Task, export_options: ExportOptions | None = None
+) -> str:
+    options = export_options or ExportOptions()
     parts = []
-    if task.bnr:
+    if "bnr" in options.task_table_attributes and task.bnr:
         parts.append(f"BNR: {task.bnr}")
-    if task.cost:
+    if "cost" in options.task_table_attributes and task.cost:
         parts.append(f"Cost: {task.cost}")
-    if task.funding_status:
+    if "funding_status" in options.task_table_attributes and task.funding_status:
         parts.append(f"Funding: {task.funding_status}")
-    if task.type:
+    if "type" in options.task_table_attributes and task.type:
         parts.append(f"Type: {task.type}")
-    if task.tags:
+    if "tags" in options.task_table_attributes and task.tags:
         parts.append("Tags: " + ", ".join(task.tags))
     return "; ".join(parts)
 
 
-def _table_row(values: list[str], widths: list[int], *, header: bool = False) -> str:
+def _table_row(
+    values: list[str],
+    widths: list[int],
+    alignments: list[str],
+    *,
+    header: bool = False,
+) -> str:
     cells = "".join(
-        _table_cell(value, width=width, header=header)
-        for value, width in zip(values, widths)
+        _table_cell(value, width=width, alignment=alignment, header=header)
+        for value, width, alignment in zip(values, widths, alignments)
     )
     return f"<w:tr>{cells}</w:tr>"
 
 
-def _table_cell(value: str, *, width: int, header: bool = False) -> str:
+def _table_cell(
+    value: str,
+    *,
+    width: int,
+    alignment: str = "center",
+    header: bool = False,
+) -> str:
     run_props = _run_props(bold=header, size=18)
     shading = '<w:shd w:fill="D9EAF7"/>' if header else ""
+    paragraph_alignment = _paragraph_alignment_xml(alignment)
     return (
         f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>{shading}</w:tcPr>'
-        f"<w:p><w:r>{run_props}<w:t xml:space=\"preserve\">{escape(value)}</w:t></w:r></w:p></w:tc>"
+        f"<w:p>{paragraph_alignment}<w:r>{run_props}<w:t xml:space=\"preserve\">{escape(value)}</w:t></w:r></w:p></w:tc>"
     )
+
+
+def _paragraph_alignment_xml(alignment: str) -> str:
+    return f'<w:pPr><w:jc w:val="{alignment}"/></w:pPr>'
 
 
 def _section_properties() -> str:

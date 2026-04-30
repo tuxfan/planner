@@ -209,12 +209,12 @@ Examples:
 - `list`: prints task details in deadline order by default, including fiscal start and deadline values and expected duration in months
 - `summary`: groups tasks by project and milestone
 - `schedule`: prints tasks in dependency order and marks them as `READY`, `BLOCKED`, `ACTIVE`, or `COMPLETE`
-- `export-docx`: generates a Word document with the schedule and a detailed task table. Use `--export-options PATH` or `TUXFAN_PLANNER_EXPORT_OPTIONS` to control which optional task attributes appear in the summary table.
+- `export-docx`: generates a Word document with the schedule and a detailed task table. Use `--export-options PATH` or `TUXFAN_PLANNER_EXPORT_OPTIONS` to control which optional task attributes appear in the summary table and in the per-task narrative metadata.
 - `export-svg`: generates a graphical SVG plan where fill color reflects status, border color reflects risk level, and an accent bar reflects priority. It also accepts `--export-options PATH` for CLI consistency, though the current table-column options affect the Word export table only.
 
 ## Export options
 
-Export options files can be YAML, YML, or Python. The current supported setting is `task_table_attributes`, which controls the optional task attribute columns included in the Word export summary table.
+Export options files can be YAML, YML, or Python. The current supported settings are `task_table_attributes` and `task_table_columns`, which control the optional task attribute columns included in the Word export summary table. The `.docx` export always includes `Task` and `Project`; every other task metadata field in the table and per-task attribute narrative is limited to the attributes listed here.
 
 Supported attribute names:
 
@@ -224,7 +224,7 @@ Supported attribute names:
 - `type`
 - `tags`
 
-Example YAML:
+Simple YAML:
 
 ```yaml
 task_table_attributes:
@@ -232,6 +232,35 @@ task_table_attributes:
   - funding
   - tags
 ```
+
+Shorthand YAML with custom labels:
+
+```yaml
+task_table_attributes:
+  - bnr: BNR
+  - funding: Status
+  - tags: Keywords
+```
+
+Recommended explicit YAML when you need labels or alignment:
+
+```yaml
+task_table_columns:
+  - attribute: bnr
+    label: BNR
+  - attribute: funding
+    label: Status
+  - attribute: tags
+    label: Keywords
+```
+
+Supported column alignment values:
+
+- `left`
+- `center`
+- `right`
+
+`alignment` is optional and defaults to `center`.
 
 Example CLI usage:
 

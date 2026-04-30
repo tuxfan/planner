@@ -11,7 +11,7 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 from planner.cli import main
-from planner.export_options import ExportOptions, load_export_options
+from planner.export_options import ExportOptions, TaskTableColumn, load_export_options
 from planner.exporters import write_docx, write_svg
 from planner.loader import load_plan, load_tasks
 from planner.models import ValidationError, build_schedule
@@ -836,7 +836,48 @@ class PlannerTests(unittest.TestCase):
 
         self.assertEqual(
             options,
-            ExportOptions(task_table_attributes=("funding_status", "tags")),
+            ExportOptions(
+                task_table_attributes=("funding_status", "tags"),
+                task_table_columns=(
+                    TaskTableColumn(attribute="funding_status", alignment="center"),
+                    TaskTableColumn(attribute="tags", alignment="center"),
+                ),
+            ),
+        )
+
+    def test_loads_export_options_with_column_labels_and_alignment(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "export-options.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    task_table_attributes:
+                      - bnr: BNR
+                      - funding:
+                          label: Status
+                          alignment: center
+                      - tags
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            options = load_export_options(path)
+
+        self.assertEqual(
+            options,
+            ExportOptions(
+                task_table_attributes=("bnr", "funding_status", "tags"),
+                task_table_columns=(
+                    TaskTableColumn(attribute="bnr", label="BNR", alignment="center"),
+                    TaskTableColumn(
+                        attribute="funding_status",
+                        label="Status",
+                        alignment="center",
+                    ),
+                    TaskTableColumn(attribute="tags", alignment="center"),
+                ),
+            ),
         )
 
     def test_writes_word_document_with_custom_table_attributes(self) -> None:
@@ -874,17 +915,40 @@ class PlannerTests(unittest.TestCase):
             write_docx(
                 load_plan(source),
                 destination,
-                export_options=ExportOptions(task_table_attributes=("tags",)),
+                export_options=ExportOptions(
+                    task_table_attributes=("funding_status", "tags"),
+                    task_table_columns=(
+                        TaskTableColumn(
+                            attribute="funding_status",
+                            label="Status",
+                            alignment="center",
+                        ),
+                        TaskTableColumn(attribute="tags"),
+                    ),
+                ),
             )
 
             with ZipFile(destination) as archive:
                 document = archive.read("word/document.xml").decode("utf-8")
 
+        self.assertIn('<w:t xml:space="preserve">Status</w:t>', document)
+        self.assertIn('<w:pPr><w:jc w:val="center"/></w:pPr>', document)
+        self.assertNotIn("<w:textDirection", document)
         self.assertIn('<w:t xml:space="preserve">Tags</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">BNR</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">Cost</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">Funding</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">Type</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Start</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Deadline</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Duration</w:t>', document)
+        self.assertNotIn("BNR: DP1518130", document)
+        self.assertNotIn("Cost: $100K", document)
+        self.assertIn("Funding: funded", document)
+        self.assertNotIn("Type: labor", document)
+        self.assertIn("Tags: checkpoint, restart", document)
+        self.assertIn('<w:tblW w:w="14400" w:type="dxa"/>', document)
+        self.assertIn('<w:tblLayout w:type="fixed"/>', document)
 
     def test_cli_export_docx_uses_env_export_options(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -953,6 +1017,9 @@ class PlannerTests(unittest.TestCase):
         self.assertIn(f"Wrote Word document to {destination}.", stdout.getvalue())
         self.assertIn('<w:t xml:space="preserve">Tags</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">BNR</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Start</w:t>', document)
+        self.assertIn("Tags: checkpoint", document)
+        self.assertNotIn("BNR: DP1518130", document)
 
     def test_cli_export_docx_accepts_export_options_argument(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1013,6 +1080,9 @@ class PlannerTests(unittest.TestCase):
 
         self.assertIn('<w:t xml:space="preserve">Tags</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">BNR</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Start</w:t>', document)
+        self.assertIn("Tags: checkpoint", document)
+        self.assertNotIn("BNR: DP1518130", document)
 
     def test_cli_export_docx_env_export_options_override_argument(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1093,6 +1163,9 @@ class PlannerTests(unittest.TestCase):
 
         self.assertIn('<w:t xml:space="preserve">BNR</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">Tags</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Start</w:t>', document)
+        self.assertIn("BNR: DP1518130", document)
+        self.assertNotIn("Tags: checkpoint", document)
         self.assertIn(
             "warning: both --export-options and TUXFAN_PLANNER_EXPORT_OPTIONS are set; "
             "using TUXFAN_PLANNER_EXPORT_OPTIONS.",
@@ -1218,6 +1291,8 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Document execution detail.", document)
         self.assertIn("Tasks", document)
         self.assertIn("Resourcing/Schedule", document)
+        self.assertIn('<w:t xml:space="preserve">Task</w:t>', document)
+        self.assertIn('<w:t xml:space="preserve">Project</w:t>', document)
         self.assertIn("Task A.1", document)
         self.assertIn("Task B.1", document)
         self.assertNotIn("LONG_IDENTIFIER_FOR_TABLE", document)
@@ -1229,11 +1304,11 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("funded", document)
         self.assertIn("Type", document)
         self.assertIn("labor", document)
-        self.assertIn("Tags: checkpoint, restart", document)
-        self.assertIn("Start", document)
-        self.assertIn("Deadline", document)
-        self.assertIn("Duration", document)
-        self.assertIn("2 mo.", document)
+        self.assertNotIn("Tags", document)
+        self.assertNotIn("checkpoint, restart", document)
+        self.assertNotIn('<w:t xml:space="preserve">Start</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Deadline</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Duration</w:t>', document)
         self.assertIn("Risk Mitigation", document)
         self.assertIn("Finish the prerequisite task first.", document)
 

@@ -133,3 +133,7 @@ Validation rules currently enforced:
 - Added optional export configuration file support for export commands through `--export-options` or `TUXFAN_PLANNER_EXPORT_OPTIONS`.
 - Added validated export table column selection for `.docx` task summary tables, with configurable optional attributes `bnr`, `cost`, `funding_status`, `type`, and `tags`.
 - Added `planner/examples/export-options.yaml`, README documentation, and unit coverage for both CLI and direct exporter usage of export options.
+- Changed `.docx` export column behavior so the task summary table now always includes only `Task` and `Project` plus the optional attributes named in export options; the same attribute filter now also controls per-task attribute metadata appended in the narrative section.
+- Changed `.docx` task summary tables to use the full printable landscape page width by emitting a fixed-width table and scaling column widths to the document content width inside the configured margins.
+- Extended export options to support labeled task table columns and per-column alignment in `.docx` output, while keeping the older list-of-attribute syntax working; `task_table_columns` is now the recommended explicit schema and takes precedence when both forms are present.
+- Changed `.docx` task table column alignment defaults so `alignment` is optional and resolves to `center` unless explicitly set to `left` or `right`.

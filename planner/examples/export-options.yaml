@@ -1,5 +1,9 @@
-task_table_attributes:
-  - bnr
-  - cost
-  - funding
-  - type
+task_table_columns:
+  - attribute: bnr
+    label: BNR
+  - attribute: cost
+    label: Cost
+  - attribute: funding
+    label: Status
+  - attribute: type
+    label: Type
