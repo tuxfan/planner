@@ -5,11 +5,13 @@ import os
 import sys
 from collections import defaultdict
 
+from .export_options import load_export_options
 from .exporters import write_docx, write_svg
 from .loader import load_plan
 from .models import ValidationError, build_schedule
 
 TASK_FILE_ENV_VAR = "TUXFAN_PLANNER_DATAFILE"
+EXPORT_OPTIONS_ENV_VAR = "TUXFAN_PLANNER_EXPORT_OPTIONS"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -41,6 +43,14 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         help="Path to the .docx file to generate",
     )
+    export_docx.add_argument(
+        "--export-options",
+        dest="export_options",
+        help=(
+            "Path to a YAML or Python export options file. Optional when "
+            f"{EXPORT_OPTIONS_ENV_VAR} is set."
+        ),
+    )
 
     export_svg = subparsers.add_parser("export-svg")
     export_svg.add_argument(
@@ -56,6 +66,14 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         help="Path to the .svg file to generate",
     )
+    export_svg.add_argument(
+        "--export-options",
+        dest="export_options",
+        help=(
+            "Path to a YAML or Python export options file. Optional when "
+            f"{EXPORT_OPTIONS_ENV_VAR} is set."
+        ),
+    )
 
     return parser
 
@@ -64,10 +82,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     task_file, output_file = _resolve_paths(args, parser)
+    export_options = _resolve_export_options(args)
 
     try:
         plan = load_plan(task_file)
         tasks = list(plan.tasks)
+        options = (
+            load_export_options(export_options) if export_options is not None else None
+        )
     except ValidationError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -93,12 +115,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "export-docx":
-        output = write_docx(plan, output_file)
+        output = write_docx(plan, output_file, export_options=options)
         print(f"Wrote Word document to {output}.")
         return 0
 
     if args.command == "export-svg":
-        output = write_svg(plan, output_file)
+        output = write_svg(plan, output_file, export_options=options)
         print(f"Wrote SVG plan to {output}.")
         return 0
 
@@ -143,6 +165,19 @@ def _resolve_paths(
 
     parser.error(f"Unknown command: {args.command}")
     raise AssertionError("parser.error should have exited")
+
+
+def _resolve_export_options(args: argparse.Namespace) -> str | None:
+    if args.command not in {"export-docx", "export-svg"}:
+        return None
+    export_options_from_env = os.getenv(EXPORT_OPTIONS_ENV_VAR)
+    if export_options_from_env is not None and args.export_options is not None:
+        print(
+            f"warning: both --export-options and {EXPORT_OPTIONS_ENV_VAR} are set; "
+            f"using {EXPORT_OPTIONS_ENV_VAR}.",
+            file=sys.stderr,
+        )
+    return export_options_from_env or args.export_options
 
 
 def _print_plan_metadata(plan) -> None:

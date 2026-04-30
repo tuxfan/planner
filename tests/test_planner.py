@@ -11,6 +11,7 @@ from unittest.mock import patch
 from zipfile import ZipFile
 
 from planner.cli import main
+from planner.export_options import ExportOptions, load_export_options
 from planner.exporters import write_docx, write_svg
 from planner.loader import load_plan, load_tasks
 from planner.models import ValidationError, build_schedule
@@ -815,6 +816,288 @@ class PlannerTests(unittest.TestCase):
             self.assertEqual(stderr.getvalue(), "")
             self.assertTrue(destination.exists())
             self.assertIn(f"Wrote SVG plan to {destination}.", stdout.getvalue())
+
+    def test_loads_export_options_from_yaml(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "export-options.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    task_table_attributes:
+                      - funding
+                      - tags
+                      - funding_status
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            options = load_export_options(path)
+
+        self.assertEqual(
+            options,
+            ExportOptions(task_table_attributes=("funding_status", "tags")),
+        )
+
+    def test_writes_word_document_with_custom_table_attributes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: A
+                        bnr: DP1518130
+                        cost: $100K
+                        funding_status: funded
+                        type: labor
+                        tags: checkpoint, restart
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 2
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Finish the prerequisite task first.
+                        status: complete
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.docx"
+
+            write_docx(
+                load_plan(source),
+                destination,
+                export_options=ExportOptions(task_table_attributes=("tags",)),
+            )
+
+            with ZipFile(destination) as archive:
+                document = archive.read("word/document.xml").decode("utf-8")
+
+        self.assertIn('<w:t xml:space="preserve">Tags</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">BNR</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Cost</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Funding</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Type</w:t>', document)
+
+    def test_cli_export_docx_uses_env_export_options(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: A
+                        bnr: DP1518130
+                        cost: $100K
+                        funding_status: funded
+                        type: labor
+                        tags:
+                          - checkpoint
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 2
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Finish the prerequisite task first.
+                        status: complete
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            options_path = Path(tmpdir) / "export-options.yaml"
+            options_path.write_text(
+                textwrap.dedent(
+                    """
+                    task_table_attributes:
+                      - tags
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.docx"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            with (
+                patch.dict(
+                    "os.environ",
+                    {
+                        "TUXFAN_PLANNER_DATAFILE": str(source),
+                        "TUXFAN_PLANNER_EXPORT_OPTIONS": str(options_path),
+                    },
+                ),
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                result = main(["export-docx", str(destination)])
+
+            self.assertEqual(result, 0)
+            self.assertEqual(stderr.getvalue(), "")
+            self.assertTrue(destination.exists())
+            with ZipFile(destination) as archive:
+                document = archive.read("word/document.xml").decode("utf-8")
+
+        self.assertIn(f"Wrote Word document to {destination}.", stdout.getvalue())
+        self.assertIn('<w:t xml:space="preserve">Tags</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">BNR</w:t>', document)
+
+    def test_cli_export_docx_accepts_export_options_argument(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: A
+                        bnr: DP1518130
+                        cost: $100K
+                        funding_status: funded
+                        type: labor
+                        tags:
+                          - checkpoint
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 2
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Finish the prerequisite task first.
+                        status: complete
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            options_path = Path(tmpdir) / "export-options.yaml"
+            options_path.write_text(
+                textwrap.dedent(
+                    """
+                    task_table_attributes:
+                      - tags
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.docx"
+
+            result = main(
+                [
+                    "export-docx",
+                    str(source),
+                    str(destination),
+                    "--export-options",
+                    str(options_path),
+                ]
+            )
+
+            self.assertEqual(result, 0)
+            with ZipFile(destination) as archive:
+                document = archive.read("word/document.xml").decode("utf-8")
+
+        self.assertIn('<w:t xml:space="preserve">Tags</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">BNR</w:t>', document)
+
+    def test_cli_export_docx_env_export_options_override_argument(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: A
+                        bnr: DP1518130
+                        cost: $100K
+                        funding_status: funded
+                        type: labor
+                        tags:
+                          - checkpoint
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 2
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Finish the prerequisite task first.
+                        status: complete
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            cli_options_path = Path(tmpdir) / "cli-export-options.yaml"
+            cli_options_path.write_text(
+                textwrap.dedent(
+                    """
+                    task_table_attributes:
+                      - tags
+                    """
+                ),
+                encoding="utf-8",
+            )
+            env_options_path = Path(tmpdir) / "env-export-options.yaml"
+            env_options_path.write_text(
+                textwrap.dedent(
+                    """
+                    task_table_attributes:
+                      - bnr
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.docx"
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            with (
+                patch.dict(
+                    "os.environ",
+                    {"TUXFAN_PLANNER_EXPORT_OPTIONS": str(env_options_path)},
+                ),
+                redirect_stdout(stdout),
+                redirect_stderr(stderr),
+            ):
+                result = main(
+                    [
+                        "export-docx",
+                        str(source),
+                        str(destination),
+                        "--export-options",
+                        str(cli_options_path),
+                    ]
+                )
+
+            self.assertEqual(result, 0)
+            with ZipFile(destination) as archive:
+                document = archive.read("word/document.xml").decode("utf-8")
+
+        self.assertIn('<w:t xml:space="preserve">BNR</w:t>', document)
+        self.assertNotIn('<w:t xml:space="preserve">Tags</w:t>', document)
+        self.assertIn(
+            "warning: both --export-options and TUXFAN_PLANNER_EXPORT_OPTIONS are set; "
+            "using TUXFAN_PLANNER_EXPORT_OPTIONS.",
+            stderr.getvalue(),
+        )
 
     def test_orders_deadlines_across_fiscal_year_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

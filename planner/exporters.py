@@ -4,6 +4,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 from zipfile import ZIP_DEFLATED, ZipFile
 
+from .export_options import ExportOptions
 from .models import ProjectPlan, Task, build_schedule, validate_tasks
 
 
@@ -30,10 +31,54 @@ PRIORITY_COLORS = {
 }
 
 
-def write_docx(plan_or_tasks: ProjectPlan | list[Task], destination: str | Path) -> Path:
+TASK_TABLE_BASE_COLUMNS = (
+    ("Task", 800, lambda task, task_numbers, schedule_state: task_numbers[task.id]),
+    ("Project", 1350, lambda task, task_numbers, schedule_state: task.project),
+    ("Start", 650, lambda task, task_numbers, schedule_state: task.start),
+    ("Deadline", 650, lambda task, task_numbers, schedule_state: task.deadline),
+    (
+        "Duration",
+        650,
+        lambda task, task_numbers, schedule_state: f"{task.expected_duration} mo.",
+    ),
+    ("Status", 750, lambda task, task_numbers, schedule_state: task.status),
+    ("Priority", 800, lambda task, task_numbers, schedule_state: task.priority),
+    (
+        "Risk",
+        750,
+        lambda task, task_numbers, schedule_state: f"{task.risk_level}/{task.risk_type}",
+    ),
+    (
+        "Schedule",
+        800,
+        lambda task, task_numbers, schedule_state: schedule_state[task.id],
+    ),
+    (
+        "Dependencies",
+        900,
+        lambda task, task_numbers, schedule_state: _dependency_numbers(task, task_numbers),
+    ),
+)
+
+TASK_TABLE_ATTRIBUTE_COLUMNS = {
+    "bnr": ("BNR", 750, lambda task: task.bnr or "-"),
+    "cost": ("Cost", 650, lambda task: task.cost or "-"),
+    "funding_status": ("Funding", 700, lambda task: task.funding_status or "-"),
+    "type": ("Type", 700, lambda task: task.type or "-"),
+    "tags": ("Tags", 900, lambda task: ", ".join(task.tags) if task.tags else "-"),
+}
+
+
+def write_docx(
+    plan_or_tasks: ProjectPlan | list[Task],
+    destination: str | Path,
+    *,
+    export_options: ExportOptions | None = None,
+) -> Path:
     plan = _as_project_plan(plan_or_tasks)
     ordered = validate_tasks(plan.tasks)
     schedule = build_schedule(ordered)
+    options = export_options or ExportOptions()
     output = Path(destination)
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -41,12 +86,20 @@ def write_docx(plan_or_tasks: ProjectPlan | list[Task], destination: str | Path)
         archive.writestr("[Content_Types].xml", _content_types_xml())
         archive.writestr("_rels/.rels", _package_rels_xml())
         archive.writestr("word/_rels/document.xml.rels", _document_rels_xml())
-        archive.writestr("word/document.xml", _document_xml(plan, ordered, schedule))
+        archive.writestr(
+            "word/document.xml",
+            _document_xml(plan, ordered, schedule, options),
+        )
 
     return output
 
 
-def write_svg(plan_or_tasks: ProjectPlan | list[Task], destination: str | Path) -> Path:
+def write_svg(
+    plan_or_tasks: ProjectPlan | list[Task],
+    destination: str | Path,
+    *,
+    export_options: ExportOptions | None = None,
+) -> Path:
     plan = _as_project_plan(plan_or_tasks)
     ordered = validate_tasks(plan.tasks)
     schedule = build_schedule(ordered)
@@ -87,7 +140,10 @@ def _document_rels_xml() -> str:
 
 
 def _document_xml(
-    plan: ProjectPlan, tasks: list[Task], schedule: list[tuple[int, str, Task]]
+    plan: ProjectPlan,
+    tasks: list[Task],
+    schedule: list[tuple[int, str, Task]],
+    export_options: ExportOptions,
 ) -> str:
     task_numbers = _task_numbers(tasks)
     body = [
@@ -119,7 +175,7 @@ def _document_xml(
         [
             _paragraph("Resourcing/Schedule:", style="Heading1"),
             _paragraph("Task Summary Table:", style="Heading2"),
-            _task_table(tasks, schedule, task_numbers),
+            _task_table(tasks, schedule, task_numbers, export_options),
             _paragraph("Risk Mitigation:", style="Heading1"),
             *_risk_mitigation_paragraphs(tasks, task_numbers),
         ]
@@ -275,45 +331,40 @@ def _risk_mitigation_paragraphs(
 
 
 def _task_table(
-    tasks: list[Task], schedule: list[tuple[int, str, Task]], task_numbers: dict[str, str]
+    tasks: list[Task],
+    schedule: list[tuple[int, str, Task]],
+    task_numbers: dict[str, str],
+    export_options: ExportOptions,
 ) -> str:
     schedule_state = {task.id: state for _, state, task in schedule}
-    headers = [
-        "Task",
-        "Project",
-        "Start",
-        "Deadline",
-        "Duration",
-        "Status",
-        "BNR",
-        "Cost",
-        "Funding",
-        "Type",
-        "Priority",
-        "Risk",
-        "Schedule",
-        "Dependencies",
+    attribute_columns = [
+        TASK_TABLE_ATTRIBUTE_COLUMNS[attribute]
+        for attribute in export_options.task_table_attributes
     ]
-    widths = [800, 1350, 650, 650, 650, 750, 750, 650, 700, 700, 800, 750, 800, 900]
+    columns = [
+        *TASK_TABLE_BASE_COLUMNS[:6],
+        *[
+            (
+                header,
+                width,
+                lambda task,
+                task_numbers,
+                schedule_state,
+                formatter=formatter: formatter(task),
+            )
+            for header, width, formatter in attribute_columns
+        ],
+        *TASK_TABLE_BASE_COLUMNS[6:],
+    ]
+    headers = [header for header, _, _ in columns]
+    widths = [width for _, width, _ in columns]
     rows = [_table_row(headers, widths, header=True)]
     for task in tasks:
         rows.append(
             _table_row(
                 [
-                    task_numbers[task.id],
-                    task.project,
-                    task.start,
-                    task.deadline,
-                    f"{task.expected_duration} mo.",
-                    task.status,
-                    task.bnr or "-",
-                    task.cost or "-",
-                    task.funding_status or "-",
-                    task.type or "-",
-                    task.priority,
-                    f"{task.risk_level}/{task.risk_type}",
-                    schedule_state[task.id],
-                    _dependency_numbers(task, task_numbers),
+                    formatter(task, task_numbers, schedule_state)
+                    for _, _, formatter in columns
                 ],
                 widths,
             )

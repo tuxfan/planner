@@ -1,0 +1,5 @@
+task_table_attributes:
+  - bnr
+  - cost
+  - funding
+  - type

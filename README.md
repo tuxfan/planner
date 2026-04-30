@@ -56,6 +56,13 @@ planner export-docx /tmp/plan.docx
 planner export-svg /tmp/plan.svg
 ```
 
+If you set `TUXFAN_PLANNER_EXPORT_OPTIONS`, the export commands use that file by default:
+
+```bash
+export TUXFAN_PLANNER_EXPORT_OPTIONS=planner/examples/export-options.yaml
+planner export-docx planner/examples/tasks.yaml /tmp/plan.docx
+```
+
 You can also install it locally:
 
 ```bash
@@ -202,5 +209,32 @@ Examples:
 - `list`: prints task details in deadline order by default, including fiscal start and deadline values and expected duration in months
 - `summary`: groups tasks by project and milestone
 - `schedule`: prints tasks in dependency order and marks them as `READY`, `BLOCKED`, `ACTIVE`, or `COMPLETE`
-- `export-docx`: generates a Word document with the schedule and a detailed task table
-- `export-svg`: generates a graphical SVG plan where fill color reflects status, border color reflects risk level, and an accent bar reflects priority
+- `export-docx`: generates a Word document with the schedule and a detailed task table. Use `--export-options PATH` or `TUXFAN_PLANNER_EXPORT_OPTIONS` to control which optional task attributes appear in the summary table.
+- `export-svg`: generates a graphical SVG plan where fill color reflects status, border color reflects risk level, and an accent bar reflects priority. It also accepts `--export-options PATH` for CLI consistency, though the current table-column options affect the Word export table only.
+
+## Export options
+
+Export options files can be YAML, YML, or Python. The current supported setting is `task_table_attributes`, which controls the optional task attribute columns included in the Word export summary table.
+
+Supported attribute names:
+
+- `bnr`
+- `cost`
+- `funding` or `funding_status`
+- `type`
+- `tags`
+
+Example YAML:
+
+```yaml
+task_table_attributes:
+  - bnr
+  - funding
+  - tags
+```
+
+Example CLI usage:
+
+```bash
+planner export-docx planner/examples/tasks.yaml /tmp/plan.docx --export-options planner/examples/export-options.yaml
+```

@@ -130,3 +130,6 @@ Validation rules currently enforced:
 - Added first-class optional task attributes from `data/ristra.yaml`: `bnr`, `funding_status`, `type`, and `tags`.
 - Threaded the new task attributes through YAML/Python loading, CLI list/schedule output, `.docx` task descriptions and summary tables, `.svg` task cards, README documentation, and unit coverage.
 - Added first-class optional `cost` task metadata from `data/ristra.yaml`, including CLI/export rendering, README documentation, and tests.
+- Added optional export configuration file support for export commands through `--export-options` or `TUXFAN_PLANNER_EXPORT_OPTIONS`.
+- Added validated export table column selection for `.docx` task summary tables, with configurable optional attributes `bnr`, `cost`, `funding_status`, `type`, and `tags`.
+- Added `planner/examples/export-options.yaml`, README documentation, and unit coverage for both CLI and direct exporter usage of export options.
