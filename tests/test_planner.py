@@ -977,7 +977,7 @@ class PlannerTests(unittest.TestCase):
                 document = archive.read("word/document.xml").decode("utf-8")
 
         self.assertIn('<w:t xml:space="preserve">Status</w:t>', document)
-        self.assertIn('<w:pPr><w:jc w:val="center"/></w:pPr>', document)
+        self.assertIn('<w:jc w:val="center"/>', document)
         self.assertNotIn("<w:textDirection", document)
         self.assertIn('<w:t xml:space="preserve">Tags</w:t>', document)
         self.assertNotIn('<w:t xml:space="preserve">BNR</w:t>', document)
@@ -992,8 +992,15 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Funding: funded", document)
         self.assertNotIn("Type: labor", document)
         self.assertIn("Tags: checkpoint, restart", document)
-        self.assertIn('<w:tblW w:w="14400" w:type="dxa"/>', document)
+        self.assertIn('<w:tblW w:w="9360" w:type="dxa"/>', document)
         self.assertIn('<w:tblLayout w:type="fixed"/>', document)
+        self.assertIn(
+            '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"',
+            document,
+        )
+        self.assertIn('<w:pgSz w:w="12240" w:h="15840"/>', document)
+        self.assertIn('<w:rFonts w:ascii="Aptos" w:hAnsi="Aptos"/>', document)
+        self.assertIn('<w:color w:val="000000"/>', document)
 
     def test_cli_export_docx_uses_env_export_options(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

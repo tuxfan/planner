@@ -30,9 +30,17 @@ PRIORITY_COLORS = {
     "urgent": "#D00000",
 }
 
-DOCX_PAGE_WIDTH = 15840
-DOCX_MARGIN = 720
+DOCX_PAGE_WIDTH = 12240
+DOCX_PAGE_HEIGHT = 15840
+DOCX_MARGIN = 1440
 DOCX_CONTENT_WIDTH = DOCX_PAGE_WIDTH - (DOCX_MARGIN * 2)
+DOCX_BODY_FONT = "Aptos"
+DOCX_DISPLAY_FONT = "Aptos Display"
+DOCX_TEXT_COLOR = "000000"
+DOCX_ACCENT_COLOR = "0F4761"
+DOCX_BODY_SIZE = 24
+DOCX_TITLE_SIZE = 40
+DOCX_TABLE_SIZE = 20
 
 TASK_TABLE_REQUIRED_COLUMNS = (
     ("Task", 800, lambda task, task_numbers, schedule_state: task_numbers[task.id]),
@@ -197,36 +205,84 @@ def _summary_lines(summary: str) -> list[str]:
 def _paragraph(
     text: str, *, style: str | None = None, bold: bool = False, underline: bool = False
 ) -> str:
-    style_xml = f'<w:pStyle w:val="{escape(style)}"/>' if style else ""
-    run_props = _run_props(bold=bold, underline=underline)
-    p_props = f"<w:pPr>{style_xml}</w:pPr>" if style_xml else ""
+    run_props = _style_run_props(style, bold=bold, underline=underline)
+    p_props = _paragraph_props(style)
     return (
         f"<w:p>{p_props}<w:r>{run_props}<w:t xml:space=\"preserve\">{escape(text)}</w:t></w:r></w:p>"
     )
 
 
 def _labeled_paragraph(label: str, value: str, *, style: str | None = None) -> str:
-    style_xml = f'<w:pStyle w:val="{escape(style)}"/>' if style else ""
-    p_props = f"<w:pPr>{style_xml}</w:pPr>" if style_xml else ""
+    p_props = _paragraph_props(style)
     return (
         f"<w:p>{p_props}"
-        f"<w:r>{_run_props(bold=True, underline=True)}<w:t xml:space=\"preserve\">{escape(label)}: </w:t></w:r>"
-        f"<w:r><w:t xml:space=\"preserve\">{escape(value)}</w:t></w:r>"
+        f"<w:r>{_style_run_props(style, bold=True, underline=True)}<w:t xml:space=\"preserve\">{escape(label)}: </w:t></w:r>"
+        f"<w:r>{_style_run_props(style)}<w:t xml:space=\"preserve\">{escape(value)}</w:t></w:r>"
         "</w:p>"
     )
 
 
 def _run_props(
-    *, bold: bool = False, underline: bool = False, size: int | None = None
+    *,
+    bold: bool = False,
+    underline: bool = False,
+    size: int | None = None,
+    font: str | None = None,
+    color: str | None = None,
 ) -> str:
     props = []
+    if font is not None:
+        font = escape(font)
+        props.append(f'<w:rFonts w:ascii="{font}" w:hAnsi="{font}"/>')
     if bold:
-        props.append("<w:b/>")
+        props.append("<w:b/><w:bCs/>")
     if underline:
         props.append('<w:u w:val="single"/>')
+    if color is not None:
+        props.append(f'<w:color w:val="{escape(color)}"/>')
     if size is not None:
         props.append(f'<w:sz w:val="{size}"/><w:szCs w:val="{size}"/>')
     return f"<w:rPr>{''.join(props)}</w:rPr>" if props else ""
+
+
+def _style_run_props(
+    style: str | None = None, *, bold: bool = False, underline: bool = False
+) -> str:
+    if style == "Title":
+        return _run_props(
+            bold=bold,
+            underline=underline,
+            size=DOCX_TITLE_SIZE,
+            font=DOCX_DISPLAY_FONT,
+            color=DOCX_ACCENT_COLOR,
+        )
+    if style in {"Heading1", "Heading2"}:
+        return _run_props(
+            bold=True,
+            underline=True,
+            size=DOCX_BODY_SIZE,
+            font=DOCX_BODY_FONT,
+            color=DOCX_TEXT_COLOR,
+        )
+    return _run_props(
+        bold=bold,
+        underline=underline,
+        size=DOCX_BODY_SIZE,
+        font=DOCX_BODY_FONT,
+        color=DOCX_TEXT_COLOR,
+    )
+
+
+def _paragraph_props(style: str | None = None) -> str:
+    props = []
+    if style:
+        props.append(f'<w:pStyle w:val="{escape(style)}"/>')
+    if style in {"Heading1", "Heading2"}:
+        props.append("<w:keepNext/>")
+    props.append('<w:spacing w:after="160" w:line="278" w:lineRule="auto"/>')
+    if style == "ListParagraph":
+        props.append('<w:ind w:left="720"/>')
+    return f"<w:pPr>{''.join(props)}</w:pPr>"
 
 
 def _project_order(tasks: list[Task]) -> list[str]:
@@ -451,24 +507,33 @@ def _table_cell(
     alignment: str = "center",
     header: bool = False,
 ) -> str:
-    run_props = _run_props(bold=header, size=18)
-    shading = '<w:shd w:fill="D9EAF7"/>' if header else ""
+    run_props = _run_props(
+        bold=header,
+        size=DOCX_TABLE_SIZE,
+        font=DOCX_BODY_FONT,
+        color=DOCX_TEXT_COLOR,
+    )
     paragraph_alignment = _paragraph_alignment_xml(alignment)
     return (
-        f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/>{shading}</w:tcPr>'
+        f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/></w:tcPr>'
         f"<w:p>{paragraph_alignment}<w:r>{run_props}<w:t xml:space=\"preserve\">{escape(value)}</w:t></w:r></w:p></w:tc>"
     )
 
 
 def _paragraph_alignment_xml(alignment: str) -> str:
-    return f'<w:pPr><w:jc w:val="{alignment}"/></w:pPr>'
+    return (
+        f'<w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/>'
+        f'<w:jc w:val="{alignment}"/></w:pPr>'
+    )
 
 
 def _section_properties() -> str:
     return (
         "<w:sectPr>"
-        '<w:pgSz w:w="15840" w:h="12240" w:orient="landscape"/>'
-        '<w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" w:header="720" w:footer="720" w:gutter="0"/>'
+        f'<w:pgSz w:w="{DOCX_PAGE_WIDTH}" w:h="{DOCX_PAGE_HEIGHT}"/>'
+        f'<w:pgMar w:top="{DOCX_MARGIN}" w:right="{DOCX_MARGIN}" w:bottom="{DOCX_MARGIN}" w:left="{DOCX_MARGIN}" w:header="720" w:footer="720" w:gutter="0"/>'
+        '<w:cols w:space="720"/>'
+        '<w:docGrid w:linePitch="360"/>'
         "</w:sectPr>"
     )
 

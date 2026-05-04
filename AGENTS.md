@@ -143,3 +143,4 @@ Validation rules currently enforced:
 - Updated execution metadata loading for `TUXFAN_PLANNER_DATAFILE` shape where top-level `execution` is now a mapping with `overview` and `sections`.
 - Added `ProjectPlan.execution_overview` while preserving `ProjectPlan.execution` as the tuple of execution section items for backward compatibility.
 - Updated CLI metadata output, `.docx` execution rendering, README documentation, and tests to support both the new mapping form and the legacy flat execution list.
+- Updated `.docx` export styling to more closely match `/home/bergen/FY27-TPP-ProjPlan-v1.docx`: portrait page geometry with 1-inch margins, Aptos/Aptos Display font choices, reference title/body colors, underlined section labels, and plain compact table cells while preserving existing table export option behavior.
