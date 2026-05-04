@@ -1426,6 +1426,47 @@ class PlannerTests(unittest.TestCase):
             self.assertNotIn('<w:pStyle w:val="ListParagraph"/>', paragraph)
             self.assertNotIn('<w:ind w:left="720"/>', paragraph)
 
+    def test_docx_uses_tight_body_paragraph_spacing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    tasks:
+                      - id: A1
+                        label: A
+                        start: M1Q3FY26
+                        deadline: M1Q3FY26
+                        expected_duration: 1
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep the task small.
+                        status: pending
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.docx"
+
+            write_docx(load_plan(source), destination)
+
+            with ZipFile(destination) as archive:
+                document = archive.read("word/document.xml").decode("utf-8")
+
+        self.assertIn(
+            '<w:spacing w:after="80" w:line="240" w:lineRule="auto"/>',
+            document,
+        )
+        self.assertNotIn(
+            '<w:spacing w:after="160" w:line="278" w:lineRule="auto"/>',
+            document,
+        )
+
     def test_writes_svg_plan(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             source = Path(tmpdir) / "tasks.yaml"

@@ -280,7 +280,7 @@ def _paragraph_props(style: str | None = None) -> str:
         props.append(f'<w:pStyle w:val="{escape(style)}"/>')
     if style in {"Heading1", "Heading2"}:
         props.append("<w:keepNext/>")
-    props.append('<w:spacing w:after="160" w:line="278" w:lineRule="auto"/>')
+    props.append('<w:spacing w:after="80" w:line="240" w:lineRule="auto"/>')
     if style == "ListParagraph":
         props.append('<w:ind w:left="720"/>')
     return f"<w:pPr>{''.join(props)}</w:pPr>"
