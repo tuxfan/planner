@@ -195,9 +195,7 @@ class ExecutionItem:
         if not label:
             raise ValidationError(f"Execution item #{index or '?'} has an empty label.")
         if not description:
-            raise ValidationError(
-                f"Execution item '{label}' has an empty description."
-            )
+            raise ValidationError(f"Execution item '{label}' has an empty description.")
 
         return cls(label=label, description=description)
 
@@ -379,6 +377,8 @@ def _schedule_state(task: Task, task_map: dict[str, Task]) -> str:
         return "ONGOING"
     if task.status == "blocked":
         return "BLOCKED"
-    if all(task_map[dependency].status == "complete" for dependency in task.dependencies):
+    if all(
+        task_map[dependency].status == "complete" for dependency in task.dependencies
+    ):
         return "READY"
     return "BLOCKED"

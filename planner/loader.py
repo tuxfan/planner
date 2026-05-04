@@ -7,7 +7,6 @@ import yaml
 
 from .models import ExecutionItem, ProjectPlan, Task, ValidationError, validate_tasks
 
-
 METADATA_KEYS = {"portfolio", "project", "managers", "pocs", "summary", "execution"}
 
 

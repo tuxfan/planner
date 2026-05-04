@@ -1277,8 +1277,10 @@ class PlannerTests(unittest.TestCase):
                     portfolio: Portfolio A
                     managers:
                       - Alice
+                      - Bob
                     pocs:
                       - Casey
+                      - Drew
                     summary: >
                       Document-level planning context.
                     execution:
@@ -1339,7 +1341,11 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Federal Portfolio(s)", document)
         self.assertIn("Federal Program Manager(s)", document)
         self.assertIn("Alice", document)
+        self.assertIn("Bob", document)
+        self.assertNotIn("Alice / Bob", document)
         self.assertIn("Project Points of Contact", document)
+        self.assertIn("Casey", document)
+        self.assertIn("Drew", document)
         self.assertIn("Document-level planning context.", document)
         self.assertIn("Execution", document)
         self.assertIn("Document execution overview.", document)
@@ -1367,6 +1373,56 @@ class PlannerTests(unittest.TestCase):
         self.assertNotIn('<w:t xml:space="preserve">Duration</w:t>', document)
         self.assertIn("Risk Mitigation", document)
         self.assertIn("Finish the prerequisite task first.", document)
+
+    def test_docx_metadata_people_are_not_joined_or_indented(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "tasks.yaml"
+            source.write_text(
+                textwrap.dedent(
+                    """
+                    managers:
+                      - Alice
+                      - Bob
+                    pocs:
+                      - Casey
+                      - Drew
+                    tasks:
+                      - id: A1
+                        label: A
+                        start: M1Q3FY26
+                        deadline: M1Q3FY26
+                        expected_duration: 1
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep the task small.
+                        status: pending
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+            destination = Path(tmpdir) / "plan.docx"
+
+            write_docx(load_plan(source), destination)
+
+            with ZipFile(destination) as archive:
+                document = archive.read("word/document.xml").decode("utf-8")
+
+        def paragraph_containing(text: str) -> str:
+            marker = f'<w:t xml:space="preserve">{text}</w:t>'
+            return next(
+                paragraph for paragraph in document.split("<w:p>") if marker in paragraph
+            )
+
+        self.assertNotIn("Alice / Bob", document)
+        for name in ["Alice", "Bob", "Casey", "Drew"]:
+            paragraph = paragraph_containing(name)
+            self.assertNotIn('<w:pStyle w:val="ListParagraph"/>', paragraph)
+            self.assertNotIn('<w:ind w:left="720"/>', paragraph)
 
     def test_writes_svg_plan(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

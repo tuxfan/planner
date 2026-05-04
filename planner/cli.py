@@ -137,9 +137,7 @@ def _resolve_paths(
     if args.command in {"validate", "list", "summary", "schedule"}:
         task_file = args.task_file or task_file_from_env
         if task_file is None:
-            parser.error(
-                f"task_file is required unless {TASK_FILE_ENV_VAR} is set."
-            )
+            parser.error(f"task_file is required unless {TASK_FILE_ENV_VAR} is set.")
         return task_file, None
 
     if args.command in {"export-docx", "export-svg"}:

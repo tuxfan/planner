@@ -8,7 +8,6 @@ import yaml
 
 from .models import ValidationError
 
-
 DEFAULT_TASK_TABLE_ATTRIBUTES = ("bnr", "cost", "funding_status", "type")
 TASK_TABLE_ATTRIBUTE_ALIASES = {
     "bnr": "bnr",
@@ -45,7 +44,9 @@ class ExportOptions:
 
         task_table_columns = cls._coerce_task_table_columns(raw)
         return cls(
-            task_table_attributes=tuple(column.attribute for column in task_table_columns),
+            task_table_attributes=tuple(
+                column.attribute for column in task_table_columns
+            ),
             task_table_columns=task_table_columns,
         )
 

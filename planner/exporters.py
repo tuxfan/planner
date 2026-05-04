@@ -7,7 +7,6 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from .export_options import ExportOptions
 from .models import ProjectPlan, Task, build_schedule, validate_tasks
 
-
 STATUS_COLORS = {
     "pending": "#F9E2AE",
     "active": "#A9D6E5",
@@ -182,12 +181,11 @@ def _metadata_paragraphs(plan: ProjectPlan) -> list[str]:
     if plan.portfolio:
         body.append(_labeled_paragraph("Federal Portfolio(s)", plan.portfolio))
     if plan.managers:
-        body.append(
-            _labeled_paragraph("Federal Program Manager(s)", " / ".join(plan.managers))
+        body.extend(
+            _metadata_list_paragraphs("Federal Program Manager(s)", plan.managers)
         )
     if plan.pocs:
-        body.append(_paragraph("Project Points of Contact:", bold=True, underline=True))
-        body.extend(_paragraph(poc, style="ListParagraph") for poc in plan.pocs)
+        body.extend(_metadata_list_paragraphs("Project Points of Contact", plan.pocs))
     if plan.summary:
         body.extend(
             [
@@ -196,6 +194,13 @@ def _metadata_paragraphs(plan: ProjectPlan) -> list[str]:
             ]
         )
     return body
+
+
+def _metadata_list_paragraphs(label: str, values: tuple[str, ...]) -> list[str]:
+    return [
+        _paragraph(f"{label}:", bold=True, underline=True),
+        *[_paragraph(value) for value in values],
+    ]
 
 
 def _summary_lines(summary: str) -> list[str]:
@@ -207,17 +212,15 @@ def _paragraph(
 ) -> str:
     run_props = _style_run_props(style, bold=bold, underline=underline)
     p_props = _paragraph_props(style)
-    return (
-        f"<w:p>{p_props}<w:r>{run_props}<w:t xml:space=\"preserve\">{escape(text)}</w:t></w:r></w:p>"
-    )
+    return f'<w:p>{p_props}<w:r>{run_props}<w:t xml:space="preserve">{escape(text)}</w:t></w:r></w:p>'
 
 
 def _labeled_paragraph(label: str, value: str, *, style: str | None = None) -> str:
     p_props = _paragraph_props(style)
     return (
         f"<w:p>{p_props}"
-        f"<w:r>{_style_run_props(style, bold=True, underline=True)}<w:t xml:space=\"preserve\">{escape(label)}: </w:t></w:r>"
-        f"<w:r>{_style_run_props(style)}<w:t xml:space=\"preserve\">{escape(value)}</w:t></w:r>"
+        f'<w:r>{_style_run_props(style, bold=True, underline=True)}<w:t xml:space="preserve">{escape(label)}: </w:t></w:r>'
+        f'<w:r>{_style_run_props(style)}<w:t xml:space="preserve">{escape(value)}</w:t></w:r>'
         "</w:p>"
     )
 
@@ -306,7 +309,9 @@ def _task_numbers(tasks: list[Task]) -> dict[str, str]:
     numbers = {}
     for task in tasks:
         counts[task.project] += 1
-        numbers[task.id] = f"Task {project_letters[task.project]}.{counts[task.project]}"
+        numbers[task.id] = (
+            f"Task {project_letters[task.project]}.{counts[task.project]}"
+        )
     return numbers
 
 
@@ -353,8 +358,12 @@ def _activity_paragraphs(tasks: list[Task]) -> list[str]:
     for project in _project_order(tasks):
         project_tasks = [task for task in tasks if task.project == project]
         task_count = len(project_tasks)
-        milestones = sorted({task.milestone for task in project_tasks if task.milestone})
-        milestone_text = ", ".join(milestones) if milestones else "unspecified milestones"
+        milestones = sorted(
+            {task.milestone for task in project_tasks if task.milestone}
+        )
+        milestone_text = (
+            ", ".join(milestones) if milestones else "unspecified milestones"
+        )
         paragraphs.append(
             _paragraph(
                 f"Activity {project_letters[project]}: {project} includes {task_count} task(s) covering {milestone_text}.",
@@ -391,14 +400,15 @@ def _task_table(
             (
                 column.label or header,
                 width,
-                lambda task,
-                task_numbers,
-                schedule_state,
-                formatter=formatter: formatter(task),
+                lambda task, task_numbers, schedule_state, formatter=formatter: formatter(
+                    task
+                ),
                 column.alignment,
             )
             for column in configured_columns
-            for header, width, formatter in [TASK_TABLE_ATTRIBUTE_COLUMNS[column.attribute]]
+            for header, width, formatter in [
+                TASK_TABLE_ATTRIBUTE_COLUMNS[column.attribute]
+            ]
         ],
     ]
     headers = [header for header, _, _, _ in columns]
@@ -423,12 +433,12 @@ def _task_table(
         '<w:tblLayout w:type="fixed"/>'
         '<w:tblLook w:firstRow="1" w:noHBand="0" w:noVBand="1"/>'
         "<w:tblBorders>"
-        "<w:top w:val=\"single\" w:sz=\"4\"/>"
-        "<w:left w:val=\"single\" w:sz=\"4\"/>"
-        "<w:bottom w:val=\"single\" w:sz=\"4\"/>"
-        "<w:right w:val=\"single\" w:sz=\"4\"/>"
-        "<w:insideH w:val=\"single\" w:sz=\"4\"/>"
-        "<w:insideV w:val=\"single\" w:sz=\"4\"/>"
+        '<w:top w:val="single" w:sz="4"/>'
+        '<w:left w:val="single" w:sz="4"/>'
+        '<w:bottom w:val="single" w:sz="4"/>'
+        '<w:right w:val="single" w:sz="4"/>'
+        '<w:insideH w:val="single" w:sz="4"/>'
+        '<w:insideV w:val="single" w:sz="4"/>'
         "</w:tblBorders></w:tblPr>"
         f"{_table_grid(widths)}"
         f"{''.join(rows)}"
@@ -459,9 +469,7 @@ def _dependency_numbers(task: Task, task_numbers: dict[str, str]) -> str:
     )
 
 
-def _task_description(
-    task: Task, export_options: ExportOptions | None = None
-) -> str:
+def _task_description(task: Task, export_options: ExportOptions | None = None) -> str:
     attributes = _task_attribute_summary(task, export_options)
     if not attributes:
         return task.description
@@ -516,7 +524,7 @@ def _table_cell(
     paragraph_alignment = _paragraph_alignment_xml(alignment)
     return (
         f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/></w:tcPr>'
-        f"<w:p>{paragraph_alignment}<w:r>{run_props}<w:t xml:space=\"preserve\">{escape(value)}</w:t></w:r></w:p></w:tc>"
+        f'<w:p>{paragraph_alignment}<w:r>{run_props}<w:t xml:space="preserve">{escape(value)}</w:t></w:r></w:p></w:tc>'
     )
 
 
