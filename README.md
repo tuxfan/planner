@@ -5,7 +5,7 @@ A small planning system that lets you define project plans and tasks in either Y
 A plan can include optional top-level project metadata:
 
 - `portfolio`: portfolio or parent program name.
-- `project`: high-level project name. When present, this is used as the plan title.
+- `project`: high-level project name.
 - `managers`: list of manager names.
 - `pocs`: list of point-of-contact names.
 - `summary`: high-level plan summary.

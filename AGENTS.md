@@ -145,3 +145,4 @@ Validation rules currently enforced:
 - Updated CLI metadata output, `.docx` execution rendering, README documentation, and tests to support both the new mapping form and the legacy flat execution list.
 - Updated `.docx` export styling to more closely match `/home/bergen/FY27-TPP-ProjPlan-v1.docx`: portrait page geometry with 1-inch margins, Aptos/Aptos Display font choices, reference title/body colors, underlined section labels, and plain compact table cells while preserving existing table export option behavior.
 - Changed `.docx` metadata rendering so managers and points of contact use consistent label-plus-lines formatting, with each person on a separate non-indented paragraph.
+- Removed `ProjectPlan.title` and changed document/SVG export headings to use `project` directly, avoiding duplicate `Project Title` and `Project` output in generated documents.

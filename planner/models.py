@@ -212,10 +212,6 @@ class ProjectPlan:
     execution: tuple[ExecutionItem, ...] = ()
     metadata: Mapping[str, object] = field(default_factory=dict)
 
-    @property
-    def title(self) -> str:
-        return self.project or self.portfolio or "Project Plan"
-
 
 def _parse_fiscal_period(value: object, *, field_name: str, label: str) -> str:
     normalized = str(value).strip()

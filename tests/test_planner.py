@@ -139,7 +139,7 @@ class PlannerTests(unittest.TestCase):
             plan = load_plan(path)
             tasks = load_tasks(path)
 
-        self.assertEqual(plan.title, "Task-Parallel Project")
+        self.assertEqual(plan.project, "Task-Parallel Project")
         self.assertEqual(plan.portfolio, "Advanced Simulation and Computing")
         self.assertEqual(plan.managers, ("Alice", "Bob"))
         self.assertEqual(plan.pocs, ("Casey, PI",))
@@ -1338,6 +1338,8 @@ class PlannerTests(unittest.TestCase):
                 document = archive.read("word/document.xml").decode("utf-8")
 
         self.assertIn("Portfolio A", document)
+        self.assertIn("Project: Portfolio A", document)
+        self.assertNotIn("Project Title", document)
         self.assertIn("Federal Portfolio(s)", document)
         self.assertIn("Federal Program Manager(s)", document)
         self.assertIn("Alice", document)

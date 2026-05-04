@@ -133,7 +133,7 @@ def _document_xml(
 ) -> str:
     task_numbers = _task_numbers(tasks)
     body = [
-        _paragraph(f"Project Title: {plan.title}", style="Title"),
+        _paragraph(f"Project: {_plan_project(plan)}", style="Title"),
     ]
     body.extend(_metadata_paragraphs(plan))
     body.extend(
@@ -176,8 +176,6 @@ def _document_xml(
 
 def _metadata_paragraphs(plan: ProjectPlan) -> list[str]:
     body: list[str] = []
-    if plan.project:
-        body.append(_labeled_paragraph("Project", plan.project))
     if plan.portfolio:
         body.append(_labeled_paragraph("Federal Portfolio(s)", plan.portfolio))
     if plan.managers:
@@ -325,6 +323,10 @@ def _execution_summary(tasks: list[Task]) -> str:
         ", ".join(projects[:-1])
         + f", and {projects[-1]} provide the planned project activities."
     )
+
+
+def _plan_project(plan: ProjectPlan) -> str:
+    return plan.project or plan.portfolio or "Project Plan"
 
 
 def _execution_paragraphs(plan: ProjectPlan, tasks: list[Task]) -> list[str]:
@@ -567,7 +569,7 @@ def _svg_document(
 
     elements = [
         f'<rect width="{width}" height="{height}" fill="#F8F5F0"/>',
-        f'<text x="40" y="48" font-family="Georgia, serif" font-size="28" fill="#1D3557">{escape(plan.title)}</text>',
+        f'<text x="40" y="48" font-family="Georgia, serif" font-size="28" fill="#1D3557">{escape(_plan_project(plan))}</text>',
         '<text x="40" y="76" font-family="Arial, sans-serif" font-size="14" fill="#4A4E69">Fill color = status, border = risk level, accent bar = priority</text>',
     ]
 
