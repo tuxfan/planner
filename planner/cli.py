@@ -188,6 +188,7 @@ def _print_plan_metadata(plan) -> None:
             plan.managers,
             plan.pocs,
             plan.summary,
+            plan.execution_overview,
             plan.execution,
         )
     ):
@@ -203,6 +204,11 @@ def _print_plan_metadata(plan) -> None:
     if plan.summary:
         print("Summary:")
         for line in plan.summary.splitlines():
+            if line.strip():
+                print(f"  {line.strip()}")
+    if plan.execution_overview:
+        print("Execution Overview:")
+        for line in plan.execution_overview.splitlines():
             if line.strip():
                 print(f"  {line.strip()}")
     if plan.execution:

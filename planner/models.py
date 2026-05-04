@@ -210,6 +210,7 @@ class ProjectPlan:
     managers: tuple[str, ...] = ()
     pocs: tuple[str, ...] = ()
     summary: str = ""
+    execution_overview: str = ""
     execution: tuple[ExecutionItem, ...] = ()
     metadata: Mapping[str, object] = field(default_factory=dict)
 

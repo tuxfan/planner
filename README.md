@@ -9,7 +9,7 @@ A plan can include optional top-level project metadata:
 - `managers`: list of manager names.
 - `pocs`: list of point-of-contact names.
 - `summary`: high-level plan summary.
-- `execution`: list of execution/deliverable narratives, each with `label` and `description`.
+- `execution`: execution metadata. It can be a mapping with `overview` text and `sections`, where each section has `label` and `description`. The older flat list of sections is still accepted.
 
 Each task supports these fields:
 
@@ -86,9 +86,12 @@ pocs:
 summary: >
   High-level planning context for the task collection.
 execution:
-  - label: Deliverable A
-    description: >
-      Narrative execution detail for this deliverable.
+  overview: >
+    Overall execution context for the plan.
+  sections:
+    - label: Deliverable A
+      description: >
+        Narrative execution detail for this deliverable.
 
 tasks:
   - id: DraftArchitecture
@@ -140,12 +143,15 @@ PLAN = {
     "managers": ["Alice Example"],
     "pocs": ["Casey Example, PI"],
     "summary": "High-level planning context for the task collection.",
-    "execution": [
-        {
-            "label": "Deliverable A",
-            "description": "Narrative execution detail for this deliverable.",
-        }
-    ],
+    "execution": {
+        "overview": "Overall execution context for the plan.",
+        "sections": [
+            {
+                "label": "Deliverable A",
+                "description": "Narrative execution detail for this deliverable.",
+            }
+        ],
+    },
     "tasks": [
         {
             "id": "DraftArchitecture",

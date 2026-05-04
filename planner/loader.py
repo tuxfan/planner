@@ -71,6 +71,7 @@ def _coerce_plan(data: object, path: Path) -> ProjectPlan:
         return ProjectPlan(tasks=tuple(tasks))
 
     metadata = {key: value for key, value in data.items() if key != "tasks"}
+    execution_overview, execution_items = _coerce_execution(data)
     return ProjectPlan(
         tasks=tuple(tasks),
         portfolio=_coerce_optional_text(data, "portfolio"),
@@ -78,7 +79,8 @@ def _coerce_plan(data: object, path: Path) -> ProjectPlan:
         managers=_coerce_optional_text_list(data, "managers"),
         pocs=_coerce_optional_text_list(data, "pocs"),
         summary=_coerce_optional_text(data, "summary"),
-        execution=_coerce_execution_items(data),
+        execution_overview=execution_overview,
+        execution=execution_items,
         metadata=metadata,
     )
 
@@ -115,13 +117,38 @@ def _coerce_optional_text_list(data: dict, key: str) -> tuple[str, ...]:
     return tuple(str(item).strip() for item in value if str(item).strip())
 
 
-def _coerce_execution_items(data: dict) -> tuple[ExecutionItem, ...]:
+def _coerce_execution(data: dict) -> tuple[str, tuple[ExecutionItem, ...]]:
     value = data.get("execution", [])
     if value is None:
-        return ()
+        return "", ()
+    if isinstance(value, dict):
+        overview = _coerce_nested_optional_text(value, "overview", "execution")
+        sections = value.get("sections", [])
+        if sections is None:
+            sections = []
+        if not isinstance(sections, list):
+            raise ValidationError(
+                "Top-level 'execution.sections' must be a list of items."
+            )
+        return overview, _coerce_execution_items(sections)
     if not isinstance(value, list):
-        raise ValidationError("Top-level 'execution' must be a list of items.")
+        raise ValidationError(
+            "Top-level 'execution' must be a list of items or a mapping with 'overview' and 'sections'."
+        )
+    return "", _coerce_execution_items(value)
+
+
+def _coerce_execution_items(value: list) -> tuple[ExecutionItem, ...]:
     return tuple(
         ExecutionItem.from_mapping(item, index=index)
         for index, item in enumerate(value, 1)
     )
+
+
+def _coerce_nested_optional_text(data: dict, key: str, parent: str) -> str:
+    value = data.get(key, "")
+    if value is None:
+        return ""
+    if isinstance(value, (list, dict)):
+        raise ValidationError(f"Top-level '{parent}.{key}' must be text.")
+    return str(value).strip()

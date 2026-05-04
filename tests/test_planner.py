@@ -156,6 +156,51 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual([task.id for task in plan.tasks], ["A1"])
         self.assertEqual([task.id for task in tasks], ["A1"])
 
+    def test_loads_execution_overview_and_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    execution:
+                      overview: >
+                        Overall execution context for the plan.
+                      sections:
+                        - label: Deliverable A
+                          description: >
+                            Narrative execution detail for the deliverable.
+                    tasks:
+                      - id: A1
+                        label: A
+                        start: M1Q3FY26
+                        deadline: M1Q3FY26
+                        expected_duration: 1
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep the task small.
+                        status: pending
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            plan = load_plan(path)
+
+        self.assertEqual(
+            plan.execution_overview, "Overall execution context for the plan."
+        )
+        self.assertEqual(len(plan.execution), 1)
+        self.assertEqual(plan.execution[0].label, "Deliverable A")
+        self.assertEqual(
+            plan.execution[0].description,
+            "Narrative execution detail for the deliverable.",
+        )
+
     def test_loads_python_plan_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "tasks.py"
@@ -1230,9 +1275,12 @@ class PlannerTests(unittest.TestCase):
                     summary: >
                       Document-level planning context.
                     execution:
-                      - label: Deliverable A
-                        description: >
-                          Document execution detail.
+                      overview: >
+                        Document execution overview.
+                      sections:
+                        - label: Deliverable A
+                          description: >
+                            Document execution detail.
                     tasks:
                       - id: A1
                         label: A
@@ -1287,6 +1335,7 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Project Points of Contact", document)
         self.assertIn("Document-level planning context.", document)
         self.assertIn("Execution", document)
+        self.assertIn("Document execution overview.", document)
         self.assertIn("Deliverable A", document)
         self.assertIn("Document execution detail.", document)
         self.assertIn("Tasks", document)

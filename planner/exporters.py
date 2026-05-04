@@ -267,19 +267,28 @@ def _execution_summary(tasks: list[Task]) -> str:
 
 
 def _execution_paragraphs(plan: ProjectPlan, tasks: list[Task]) -> list[str]:
+    paragraphs = []
+    if plan.execution_overview:
+        paragraphs.extend(
+            _paragraph(line) for line in _summary_lines(plan.execution_overview)
+        )
     if plan.execution:
-        return [
+        paragraphs.extend(
             _labeled_paragraph(item.label, item.description, style="ListParagraph")
             for item in plan.execution
-        ]
+        )
+        return paragraphs
 
-    return [
-        _labeled_paragraph(
-            "Activities",
-            _execution_summary(tasks),
-        ),
-        *_activity_paragraphs(tasks),
-    ]
+    paragraphs.extend(
+        [
+            _labeled_paragraph(
+                "Activities",
+                _execution_summary(tasks),
+            ),
+            *_activity_paragraphs(tasks),
+        ]
+    )
+    return paragraphs
 
 
 def _activity_paragraphs(tasks: list[Task]) -> list[str]:

@@ -34,7 +34,7 @@ Plan files can be a raw task list or a mapping with `tasks` plus optional metada
 - `managers`: list of manager names
 - `pocs`: list of point-of-contact names
 - `summary`: high-level plan summary
-- `execution`: list of execution/deliverable narratives with `label` and `description`
+- `execution`: mapping with optional `overview` text and `sections` list of execution/deliverable narratives with `label` and `description`; legacy flat lists are still accepted
 
 Each task includes:
 
@@ -137,3 +137,9 @@ Validation rules currently enforced:
 - Changed `.docx` task summary tables to use the full printable landscape page width by emitting a fixed-width table and scaling column widths to the document content width inside the configured margins.
 - Extended export options to support labeled task table columns and per-column alignment in `.docx` output, while keeping the older list-of-attribute syntax working; `task_table_columns` is now the recommended explicit schema and takes precedence when both forms are present.
 - Changed `.docx` task table column alignment defaults so `alignment` is optional and resolves to `center` unless explicitly set to `left` or `right`.
+
+### 2026-05-04
+
+- Updated execution metadata loading for `TUXFAN_PLANNER_DATAFILE` shape where top-level `execution` is now a mapping with `overview` and `sections`.
+- Added `ProjectPlan.execution_overview` while preserving `ProjectPlan.execution` as the tuple of execution section items for backward compatibility.
+- Updated CLI metadata output, `.docx` execution rendering, README documentation, and tests to support both the new mapping form and the legacy flat execution list.
