@@ -1,0 +1,166 @@
+project: Anonymized Integration Plan
+
+portfolio: Example Portfolio
+
+managers:
+  - Manager One
+  - Manager Two
+pocs:
+  - Contact One, PM
+  - Contact Two, PI
+
+summary: >
+  This anonymized integration plan preserves the structure of a focused
+  deliverable plan while replacing names, identifiers, and project-specific
+  narrative with generic values.
+
+execution:
+  overview: >
+    The integration plan is organized around checkpoint support, mutator
+    support, multi-material data structures, and execution model improvements.
+
+  sections:
+    - label: Restart Capability
+      description: >
+        Delivery: June 1st, 2026. Provide checkpoint and restart capability for
+        a representative integration workflow.
+
+    - label: Mutator Support
+      description: >
+        Delivery: June 1st, 2026. Add device-oriented mutator support and
+        validate the data movement strategy on representative hardware.
+
+    - label: Multi-Material Structures
+      description: >
+        Delivery: June 1st, 2026. Extend multi-material data structures and
+        validate them in anonymized example applications.
+
+    - label: Execution Model Updates
+      description: >
+        Delivery: June 1st, 2026. Improve execution model behavior for the
+        representative application workflow.
+
+tasks:
+  - id: RESTART_CORE
+    label: Restart Core Support
+    bnr: ANON-BNR-001
+    cost: $100K
+    funding status: funded
+    type: labor
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Integration Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Add focused implementation time if backend support slips.
+    status: active
+    description: >
+      Finish checkpoint and restart support for representative backends and
+      topologies.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: RESTART_APP
+    label: Restart Application Workflow
+    bnr: ANON-BNR-001
+    cost: $100K
+    funding status: funded
+    type: labor
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Integration Deliverable
+    priority: high
+    risk level: medium
+    risk type: technical
+    risk mitigation: Coordinate workflow changes with the application team.
+    status: active
+    description: >
+      Integrate checkpoint and restart support into an anonymized application
+      workflow.
+    project: Specialization Work
+    dependencies: []
+
+  - id: MUTATOR_SUPPORT
+    label: Device Mutator Support
+    bnr: ANON-BNR-001
+    cost: $200K
+    funding status: funded
+    type: labor
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Integration Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Keep memory management design consistent across platforms.
+    status: active
+    description: >
+      Add representative mutator support for accelerator-oriented execution.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: MULTIMATERIAL_CORE
+    label: Multi-Material Data Structures
+    bnr: ANON-BNR-001
+    cost: $400K
+    funding status: funded
+    type: labor
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Integration Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Add application tests before broadening the feature scope.
+    status: active
+    description: >
+      Extend multi-material and multi-model data structures for representative
+      application use.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: MULTIMATERIAL_APP
+    label: Multi-Material Application Testing
+    bnr: ANON-BNR-001
+    cost: $400K
+    funding status: funded
+    type: labor
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Integration Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Test against reduced examples before full integration.
+    status: active
+    description: >
+      Validate multi-material structures in anonymized representative
+      applications.
+    project: Application Work
+    dependencies: []
+
+  - id: EXECUTION_MODEL
+    label: Execution Model Enhancements
+    bnr: ANON-BNR-001
+    cost: $100K
+    funding status: funded
+    type: labor
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Integration Deliverable
+    priority: medium
+    risk level: low
+    risk type: schedule
+    risk mitigation: Focus updates on the representative workflow first.
+    status: active
+    description: >
+      Improve execution behavior needed by the anonymized integration workflow.
+    project: Infrastructure Work
+    dependencies: []

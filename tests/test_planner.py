@@ -256,9 +256,9 @@ class PlannerTests(unittest.TestCase):
 
         plan = load_plan(path)
 
-        self.assertEqual(plan.portfolio, "Advanced Simulation and Computing (NA-114)")
-        self.assertIn("Simon Hammond", plan.managers)
-        self.assertIn("Ben Bergen, PI", plan.pocs)
+        self.assertEqual(plan.portfolio, "Example Portfolio")
+        self.assertIn("Manager One", plan.managers)
+        self.assertIn("Contact Two, PI", plan.pocs)
         self.assertGreater(len(plan.summary), 0)
         self.assertGreater(len(plan.tasks), 0)
 
@@ -267,14 +267,14 @@ class PlannerTests(unittest.TestCase):
 
         plan = load_plan(path)
 
-        self.assertEqual(plan.portfolio, "Advanced Simulation and Computing (NA-114)")
+        self.assertEqual(plan.portfolio, "Example Portfolio")
         self.assertEqual(
             [item.label for item in plan.execution],
             [
-                "Checkpoint/Restart",
-                "Device Mutator Support",
-                "Multi-Material Data Structures",
-                "Execution Model Enhancements",
+                "Restart Capability",
+                "Mutator Support",
+                "Multi-Material Structures",
+                "Execution Model Updates",
             ],
         )
         self.assertIn("Delivery: June 1st, 2026.", plan.execution[0].description)
@@ -818,6 +818,43 @@ class PlannerTests(unittest.TestCase):
             "task_file is required unless TUXFAN_PLANNER_DATAFILE is set.",
             stderr.getvalue(),
         )
+
+    def test_cli_prints_bash_completion_script(self) -> None:
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(["completion", "bash"])
+
+        output = stdout.getvalue()
+        self.assertEqual(result, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn("validate list summary schedule export-docx export-svg", output)
+        self.assertIn("complete -o default -F _planner_completion planner", output)
+        self.assertIn(
+            "complete -o default -F _planner_completion tuxfan-planner",
+            output,
+        )
+
+    def test_cli_prints_fish_completion_script(self) -> None:
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(["completion", "fish"])
+
+        output = stdout.getvalue()
+        self.assertEqual(result, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn(
+            "complete -c planner -n '__fish_use_subcommand' -a validate",
+            output,
+        )
+        self.assertIn(
+            "complete -c tuxfan-planner -n '__fish_use_subcommand' -a schedule",
+            output,
+        )
+        self.assertIn("-l export-options", output)
 
     def test_cli_export_svg_uses_env_task_file_with_output_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1569,7 +1606,7 @@ class PlannerTests(unittest.TestCase):
         plan = load_plan(source)
 
         self.assertGreater(len(plan.tasks), 0)
-        self.assertTrue(all(task.bnr == "DP1518130" for task in plan.tasks))
+        self.assertTrue(all(task.bnr == "ANON-BNR-001" for task in plan.tasks))
         self.assertEqual(
             sorted(task.cost for task in plan.tasks),
             ["$100K", "$100K", "$100K", "$200K", "$400K", "$400K"],

@@ -72,6 +72,26 @@ planner list planner/examples/tasks.yaml
 
 The legacy `tuxfan-planner` command remains available as an alias.
 
+## Shell completion
+
+The CLI can print completion scripts for `bash`, `zsh`, and `fish`:
+
+```bash
+planner completion bash
+planner completion zsh
+planner completion fish
+```
+
+For a one-session bash setup:
+
+```bash
+source <(planner completion bash)
+```
+
+The generated completion supports the basic planner subcommands, the
+`tuxfan-planner` alias, file path completion for task and output arguments, and
+`--export-options` for export commands.
+
 ## YAML format
 
 Top-level can be either a list of tasks or a mapping with a `tasks` key. The mapping form can also include plan-level metadata such as `portfolio`, `project`, `managers`, `pocs`, `summary`, and `execution`.

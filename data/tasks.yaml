@@ -1,0 +1,262 @@
+project: Anonymized Planning Project
+
+portfolio: Example Portfolio
+
+managers:
+  - Manager One
+  - Manager Two
+pocs:
+  - Contact One, PM
+  - Contact Two, PI
+
+summary: >
+  This anonymized project plan captures representative planning metadata and
+  tasks for a task-parallel software effort. The content preserves the shape of
+  the source planning data while replacing organization names, people, and
+  project-specific narrative with generic values suitable for tests.
+
+execution:
+  overview: >
+    The project provides reusable software capabilities for modern computing
+    environments through application, specialization, and infrastructure work.
+
+  sections:
+    - label: Application Work
+      description: >
+        The application workstream provides example applications used to drive
+        interface design, integration testing, and capability demonstrations.
+
+    - label: Specialization Work
+      description: >
+        The specialization workstream develops application-facing interfaces and
+        data structures that adapt shared infrastructure for specific workloads.
+
+    - label: Infrastructure Work
+      description: >
+        The infrastructure workstream provides runtime, topology, and data
+        management capabilities used across the project.
+
+tasks:
+  - id: VTK
+    label: Data Import Support
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Initial Capability
+    priority: medium
+    risk level: low
+    risk type: technical
+    risk mitigation: Keep the file format scope narrow for the first release.
+    status: active
+    description: >
+      Add representative input support for unstructured data used by the
+      anonymized example applications.
+    project: Specialization Work
+    dependencies: []
+
+  - id: VTK_VIZ
+    label: Visualization Output
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Initial Capability
+    priority: medium
+    risk level: low
+    risk type: technical
+    risk mitigation: Validate output with small representative datasets.
+    status: pending
+    description: >
+      Add representative visualization output for structured and unstructured
+      example data.
+    project: Specialization Work
+    dependencies: []
+
+  - id: CHECKPOINT_RISTRA
+    label: Restart Workflow Integration
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Integration
+    priority: high
+    risk level: medium
+    risk type: technical
+    risk mitigation: Coordinate the workflow update with the application team.
+    status: active
+    description: >
+      Integrate checkpoint and restart support into an anonymized application
+      workflow to reduce preprocessing cost.
+    project: Specialization Work
+    dependencies: []
+
+  - id: CHECKPOINT_RESTART
+    label: Checkpoint/Restart
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Integration Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Add focused implementation time if backend support slips.
+    status: active
+    description: >
+      Finish support for representative backends and topologies, prioritizing
+      the path needed by the integration workflow.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: MULTIMODEL
+    label: Multi-Model Data Structures
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Integration Deliverable
+    priority: high
+    risk level: low
+    risk type: schedule
+    risk mitigation: Add focused implementation time if application testing slips.
+    status: active
+    description: >
+      Add representative support for multi-model data structures and test the
+      capability in anonymized example applications.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: RAGGED_EFFICIENCY
+    label: Sparse Data Efficiency
+    start: M2Q2FY26
+    deadline: M3Q3FY26
+    expected duration: 5
+    milestone: Performance
+    priority: medium
+    risk level: low
+    risk type: schedule
+    risk mitigation: Focus optimization work on the highest-impact access paths.
+    status: active
+    description: >
+      Improve internal sparse data layout representations for better
+      performance of mutator operations.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: KOKKOS
+    label: Kernel Interface Extensions
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Runtime Capability
+    priority: medium
+    risk level: low
+    risk type: technical, schedule
+    risk mitigation: >
+      technical: Coordinate with the runtime maintainers.
+      schedule: Increase staffing focus if interface work slips.
+    status: active
+    description: >
+      Extend the kernel interface with enhanced execution support for mixed CPU
+      and accelerator environments.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: SET_TOPOLOGY
+    label: Set Topology
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Topology Capability
+    priority: medium
+    risk level: low
+    risk type: technical
+    risk mitigation: Validate the interface against representative particle methods.
+    status: pending
+    description: >
+      Add topology support for representative non-interacting particle methods.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: HPX
+    label: Backend Production Support
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Runtime Capability
+    priority: medium
+    risk level: medium
+    risk type: technical, schedule, budgetary
+    risk mitigation: >
+      technical: Coordinate backend interface work with maintainers.
+      schedule: Add staffing if backend work slips.
+      budgetary: Defer lower-priority enhancements if needed.
+    status: ongoing
+    description: >
+      Bring a representative backend path to production quality with accelerator
+      support.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: LEGION
+    label: Runtime Performance
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Runtime Capability
+    priority: high
+    risk level: medium
+    risk type: technical
+    risk mitigation: Coordinate performance feedback with runtime maintainers.
+    status: active
+    description: >
+      Improve runtime performance through upstream feedback and focused
+      integration testing.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: DATA_MIGRATION
+    label: Data Migration
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Runtime Capability
+    priority: medium
+    risk level: medium
+    risk type: technical
+    risk mitigation: Coordinate with backend maintainers on address-space movement.
+    status: pending
+    description: >
+      Add support for dynamically moving data across representative execution
+      address spaces.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: DYNAMIC_MESH
+    label: Dynamic Mesh Resizing
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Topology Capability
+    priority: low
+    risk level: medium
+    risk type: technical
+    risk mitigation: Validate resizing behavior with small adaptive examples.
+    status: pending
+    description: >
+      Add interface support for ergonomic resizing of dynamic mesh connectivity.
+    project: Infrastructure Work
+    dependencies: []
+
+  - id: MAPPER
+    label: Mapping Framework
+    start: M1Q1FY26
+    deadline: M1Q1FY26
+    expected duration: 1
+    milestone: Runtime Capability
+    priority: medium
+    risk level: medium
+    risk type: technical
+    risk mitigation: Validate mapping decisions with representative applications.
+    status: active
+    description: >
+      Create a mapping architecture that uses system, topology, and application
+      structure metadata to guide runtime placement.
+    project: Infrastructure Work
+    dependencies: []
