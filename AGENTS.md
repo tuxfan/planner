@@ -172,3 +172,6 @@ Validation rules currently enforced:
 - Updated CLI, `.docx`, and `.svg` risk rendering to handle multiple risk entries per task; SVG border color now reflects the highest risk level on the task.
 - Validated the new task format against `/Users/bergen/tmp.yaml`.
 - Added support for multi-part tasks through a parent `parts` list, expanding parts into normal validated tasks with inherited parent metadata, generated ids like `PARENT_A`, sibling dependency aliasing, parent dependency expansion, and de-duplicated inherited funding totals.
+- Added Sphinx documentation under `docs/`, including quick start, schema, CLI, export option, and Python API pages.
+- Added a `docs` optional dependency extra for `Sphinx>=7.2` and README instructions for building HTML documentation.
+- Added a GitHub Actions documentation workflow that builds Sphinx HTML and publishes it to the `gh-pages` branch for GitHub Pages, with a `.nojekyll` marker for Sphinx static assets.

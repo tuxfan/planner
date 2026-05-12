@@ -103,6 +103,20 @@ The generated completion supports the basic planner subcommands, the
 `tuxfan-planner` alias, file path completion for task and output arguments, and
 `--export-options` for export commands.
 
+## Documentation
+
+Sphinx documentation lives in `docs/`. Install the documentation dependencies
+and build the HTML output from the repository root:
+
+```bash
+python3 -m pip install -e ".[docs]"
+python3 -m sphinx docs docs/_build/html
+```
+
+On GitHub, the `Documentation` workflow builds the same Sphinx output and
+publishes it to the `gh-pages` branch. Configure the repository Pages settings
+to serve from the `gh-pages` branch root.
+
 ## YAML format
 
 Top-level can be either a list of tasks or a mapping with a `tasks` key. The mapping form can also include plan-level metadata such as `portfolio`, `project`, `managers`, `pocs`, `summary`, `fiscal_range_begin`, `fiscal_range_end`, and `execution`.

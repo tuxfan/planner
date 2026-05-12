@@ -28,6 +28,14 @@ class PlannerTests(unittest.TestCase):
             "planner.cli:main",
         )
 
+    def test_declares_sphinx_docs_extra(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        data = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+
+        self.assertIn("Sphinx>=7.2", data["project"]["optional-dependencies"]["docs"])
+        self.assertTrue((root / "docs" / "conf.py").exists())
+        self.assertTrue((root / "docs" / "index.rst").exists())
+
     def test_loads_yaml_with_aliases(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "tasks.yaml"
