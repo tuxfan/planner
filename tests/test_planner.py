@@ -14,7 +14,7 @@ from planner.cli import main
 from planner.export_options import ExportOptions, TaskTableColumn, load_export_options
 from planner.exporters import write_docx, write_svg
 from planner.loader import load_plan, load_tasks
-from planner.models import ValidationError, build_schedule
+from planner.models import ValidationError, build_schedule, funding_totals
 
 
 class PlannerTests(unittest.TestCase):
@@ -192,6 +192,100 @@ class PlannerTests(unittest.TestCase):
 
         self.assertEqual(plan.fiscal_years, ("FY27", "FY28", "FY29"))
         self.assertEqual(plan.tasks[0].funding, {"FY27": "50K", "FY29": "1M"})
+
+    def test_loads_multi_part_tasks_as_flat_tasks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    fiscal_range_begin: 27
+                    fiscal_range_end: 28
+                    tasks:
+                      - id: HOFEM_SGH
+                        label: HOFEM Development
+                        site: LANL
+                        bnr: DP1518130
+                        type: labor
+                        tags:
+                          - hydro
+                        project: TPA
+                        funding:
+                          fy27: 400K
+                          fy28: 400K
+                        parts:
+                          - id: A
+                            label: Baseline HOFEM
+                            description: Build baseline HOFEM.
+                            start: M1Q1FY26
+                            deadline: M3Q3FY26
+                            expected duration: 12
+                            milestone: Unassigned
+                            priority: high
+                            status: active
+                            dependencies: []
+                            risk:
+                              - type: technical
+                                level: low
+                                mitigation: Work with methods team.
+                          - id: B
+                            label: Multi-Material HOFEM
+                            description: Add multi-material support.
+                            start: M1Q1FY27
+                            deadline: M3Q3FY27
+                            expected duration: 12
+                            milestone: Unassigned
+                            priority: high
+                            status: pending
+                            dependencies:
+                              - A
+                            risk:
+                              - type: technical
+                                level: medium
+                                mitigation: Keep interfaces narrow.
+                      - id: FOLLOW_ON
+                        label: Follow-on work
+                        project: TPA
+                        description: Work that depends on the whole HOFEM effort.
+                        start: M1Q4FY27
+                        deadline: M1Q4FY27
+                        expected duration: 1
+                        milestone: Follow-on
+                        priority: medium
+                        status: pending
+                        dependencies:
+                          - HOFEM_SGH
+                        risk:
+                          - type: schedule
+                            level: low
+                            mitigation: Track part completion.
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            plan = load_plan(path)
+
+        self.assertEqual(
+            [task.id for task in plan.tasks],
+            ["HOFEM_SGH_A", "HOFEM_SGH_B", "FOLLOW_ON"],
+        )
+        first, second, follow_on = plan.tasks
+        self.assertEqual(first.parent_id, "HOFEM_SGH")
+        self.assertEqual(first.parent_label, "HOFEM Development")
+        self.assertEqual(first.part_id, "A")
+        self.assertEqual(first.site, "LANL")
+        self.assertEqual(first.bnr, "DP1518130")
+        self.assertEqual(first.tags, ("hydro",))
+        self.assertEqual(first.funding_source_id, "HOFEM_SGH")
+        self.assertEqual(second.dependencies, ("HOFEM_SGH_A",))
+        self.assertEqual(
+            follow_on.dependencies, ("HOFEM_SGH_A", "HOFEM_SGH_B")
+        )
+        self.assertEqual(
+            funding_totals(plan.tasks, plan.fiscal_years),
+            {"FY27": "400K", "FY28": "400K"},
+        )
 
     def test_loads_yaml_plan_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

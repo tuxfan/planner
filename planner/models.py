@@ -112,6 +112,10 @@ class Task:
     site: str = ""
     type: str = ""
     tags: tuple[str, ...] = ()
+    parent_id: str = ""
+    parent_label: str = ""
+    part_id: str = ""
+    funding_source_id: str = ""
 
     @classmethod
     def from_mapping(cls, raw: dict, *, index: int | None = None) -> "Task":
@@ -182,6 +186,7 @@ class Task:
                 "Use pending, active, ongoing, blocked, or complete."
             )
 
+        funding = _coerce_task_funding(normalized, label)
         return cls(
             id=task_id,
             label=label,
@@ -198,10 +203,17 @@ class Task:
             bnr=_coerce_optional_task_text(normalized, "bnr"),
             cost=_coerce_optional_task_text(normalized, "cost"),
             funding_status=_coerce_optional_task_text(normalized, "funding_status"),
-            funding=_coerce_task_funding(normalized, label),
+            funding=funding,
             site=_coerce_optional_task_text(normalized, "site"),
             type=_coerce_optional_task_text(normalized, "type"),
             tags=_coerce_optional_task_tags(normalized),
+            parent_id=_coerce_optional_task_text(normalized, "_parent_id"),
+            parent_label=_coerce_optional_task_text(normalized, "_parent_label"),
+            part_id=_coerce_optional_task_text(normalized, "_part_id"),
+            funding_source_id=_coerce_optional_task_text(
+                normalized, "_funding_source_id"
+            )
+            or task_id,
         )
 
 
@@ -382,10 +394,15 @@ def funding_totals(
     tasks: Iterable[Task], fiscal_years: Iterable[str]
 ) -> Mapping[str, str]:
     totals = {year: 0.0 for year in fiscal_years}
+    seen_funding_sources: set[tuple[str, str]] = set()
     for task in tasks:
         for year, level in task.funding.items():
             if year not in totals:
                 continue
+            source_key = (task.funding_source_id or task.id, year)
+            if source_key in seen_funding_sources:
+                continue
+            seen_funding_sources.add(source_key)
             totals[year] += _funding_level_to_k(level)
     return {year: _format_funding_k(total) for year, total in totals.items()}
 

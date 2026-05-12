@@ -40,6 +40,7 @@ Plan files can be a raw task list or a mapping with `tasks` plus optional metada
 Each task includes:
 
 - `id`, `label`
+- optional `parts` on a parent task for multi-part tasks; parts inherit parent metadata and expand to flat task ids like `PARENT_A`
 - `bnr`, `cost`, `funding_status`, `funding`, `site`, `type`, `tags`
 - `funding`: mapping of fiscal year label to funding level, e.g. `fy27: 50K`; missing fiscal years are treated as unfunded for that task
 - `site`: site or institution label
@@ -80,6 +81,7 @@ Validation rules currently enforced:
 - dependency ids must exist
 - dependency cycles are rejected
 - validated task output is sorted by deadline month, project, label, id
+- multi-part task parents are expanded during loading; sibling part dependencies can use local part ids, external dependencies can reference the parent id to depend on all parts, and inherited parent funding is counted once in fiscal-year totals
 
 ## Behavioral Notes
 
@@ -169,3 +171,4 @@ Validation rules currently enforced:
 - Removed the old split risk fields from the documented input schema and converted README examples, planner examples, tests, and data fixtures to the new `risk` block shape.
 - Updated CLI, `.docx`, and `.svg` risk rendering to handle multiple risk entries per task; SVG border color now reflects the highest risk level on the task.
 - Validated the new task format against `/Users/bergen/tmp.yaml`.
+- Added support for multi-part tasks through a parent `parts` list, expanding parts into normal validated tasks with inherited parent metadata, generated ids like `PARENT_A`, sibling dependency aliasing, parent dependency expansion, and de-duplicated inherited funding totals.

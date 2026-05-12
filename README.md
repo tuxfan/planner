@@ -34,6 +34,16 @@ Each task supports these fields:
 - `risk`: required risk entry or list of risk entries. Each entry has `type`, `level`, and `mitigation`; `level` must be `low`, `medium`, `high`, or `extreme`.
 - `funding`: optional mapping of fiscal year to funding level, for example `fy27: 50K`. A task is treated as unfunded for fiscal years not present in this mapping.
 
+A task can also be a multi-part task by using `parts` instead of the per-task
+schedule fields on the parent. Parent fields such as `project`, `site`, `bnr`,
+`type`, `tags`, and `funding` are inherited by each part, while each part
+provides its own `id`, `label`, `description`, `start`, `deadline`,
+`expected duration`, `milestone`, `priority`, `status`, `dependencies`, and
+`risk`. Part ids are expanded as `{parent_id}_{part_id}`. Dependencies inside a
+multi-part task can reference sibling part ids, and dependencies from other
+tasks can reference the parent id to depend on all expanded parts. Parent-level
+funding inherited by multiple parts is counted once in fiscal-year totals.
+
 ## Quick start
 
 Run from this directory:
@@ -159,6 +169,44 @@ tasks:
       - type: integration
         level: medium
         mitigation: Add schema validation tests for both YAML and Python task sources.
+
+  - id: MultiYearDelivery
+    label: Multi-year delivery
+    site: LANL
+    project: Planning System
+    funding:
+      fy27: 50K
+      fy28: 100K
+    parts:
+      - id: A
+        label: First phase
+        description: Complete the first phase.
+        start: M1Q1FY27
+        deadline: M3Q2FY27
+        expected duration: 6
+        milestone: Phase A
+        priority: high
+        status: active
+        dependencies: []
+        risk:
+          - type: schedule
+            level: low
+            mitigation: Review progress monthly.
+      - id: B
+        label: Second phase
+        description: Complete the second phase.
+        start: M1Q3FY27
+        deadline: M3Q4FY28
+        expected duration: 18
+        milestone: Phase B
+        priority: medium
+        status: pending
+        dependencies:
+          - A
+        risk:
+          - type: technical
+            level: medium
+            mitigation: Keep integration tests current.
 ```
 
 ## Python format

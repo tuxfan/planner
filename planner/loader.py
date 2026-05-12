@@ -102,7 +102,7 @@ def _coerce_plan(data: object, path: Path) -> ProjectPlan:
     )
 
 
-def _coerce_task_list(data: object, path: Path) -> list[dict]:
+def _coerce_task_list(data: object, path: Path) -> list[object]:
     if isinstance(data, dict):
         if "tasks" not in data:
             raise ValidationError(
@@ -113,7 +113,122 @@ def _coerce_task_list(data: object, path: Path) -> list[dict]:
     if not isinstance(data, list):
         raise ValidationError(f"Task file '{path}' must resolve to a list of tasks.")
 
-    return data
+    return _expand_task_parts(data)
+
+
+def _expand_task_parts(raw_tasks: list[object]) -> list[object]:
+    expanded_tasks: list[object] = []
+    parent_aliases: dict[str, tuple[str, ...]] = {}
+
+    for index, raw_task in enumerate(raw_tasks, 1):
+        if not isinstance(raw_task, dict):
+            expanded_tasks.append(raw_task)
+            continue
+
+        if "parts" not in raw_task:
+            expanded_tasks.append(raw_task)
+            continue
+
+        parts = raw_task["parts"]
+        if not isinstance(parts, list) or not parts:
+            label = raw_task.get("label", raw_task.get("id", index))
+            raise ValidationError(
+                f"Task '{label}' field 'parts' must be a non-empty list."
+            )
+
+        parent = {key: value for key, value in raw_task.items() if key != "parts"}
+        parent_id = str(parent.get("id", "")).strip()
+        if not parent_id:
+            raise ValidationError(f"Task #{index} with 'parts' is missing an id.")
+
+        part_ids = _part_id_aliases(parent_id, parts, index)
+        parent_aliases[parent_id] = tuple(part_ids.values())
+
+        for part_index, part in enumerate(parts, 1):
+            if not isinstance(part, dict):
+                raise ValidationError(
+                    f"Task '{parent_id}' has invalid part #{part_index}; expected a mapping."
+                )
+
+            part_id = str(part.get("id", "")).strip()
+            if not part_id:
+                raise ValidationError(
+                    f"Task '{parent_id}' part #{part_index} is missing an id."
+                )
+
+            task = {**parent, **part}
+            task["id"] = part_ids[part_id]
+            task["_parent_id"] = parent_id
+            task["_parent_label"] = str(parent.get("label", "")).strip()
+            task["_part_id"] = part_id
+            if "funding" in parent and "funding" not in part:
+                task["_funding_source_id"] = parent_id
+            else:
+                task["_funding_source_id"] = task["id"]
+            if "dependencies" in task:
+                task["dependencies"] = _rewrite_dependency_aliases(
+                    task["dependencies"], part_ids
+                )
+            expanded_tasks.append(task)
+
+    if parent_aliases:
+        for task in expanded_tasks:
+            if isinstance(task, dict) and "dependencies" in task:
+                task["dependencies"] = _rewrite_dependency_aliases(
+                    task["dependencies"], parent_aliases
+                )
+
+    return expanded_tasks
+
+
+def _part_id_aliases(
+    parent_id: str, parts: list[object], parent_index: int
+) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for part_index, part in enumerate(parts, 1):
+        if not isinstance(part, dict):
+            continue
+        part_id = str(part.get("id", "")).strip()
+        if not part_id:
+            continue
+        expanded_id = _expanded_part_id(parent_id, part_id)
+        if part_id in aliases:
+            raise ValidationError(
+                f"Task '{parent_id}' has duplicate part id '{part_id}'."
+            )
+        if expanded_id in aliases.values():
+            raise ValidationError(
+                f"Task '{parent_id}' part #{part_index} expands to duplicate id '{expanded_id}'."
+            )
+        aliases[part_id] = expanded_id
+    if not aliases:
+        raise ValidationError(f"Task #{parent_index} has no valid part ids.")
+    return aliases
+
+
+def _expanded_part_id(parent_id: str, part_id: str) -> str:
+    if part_id == parent_id or part_id.startswith(f"{parent_id}_"):
+        return part_id
+    return f"{parent_id}_{part_id}"
+
+
+def _rewrite_dependency_aliases(
+    dependencies: object, aliases: dict[str, str | tuple[str, ...]]
+) -> object:
+    if not isinstance(dependencies, list):
+        return dependencies
+
+    rewritten: list[str] = []
+    for dependency in dependencies:
+        key = str(dependency).strip()
+        replacement = aliases.get(key, key)
+        replacement_items = (
+            replacement if isinstance(replacement, tuple) else (replacement,)
+        )
+        for item in replacement_items:
+            if item not in rewritten:
+                rewritten.append(item)
+    return rewritten
 
 
 def _coerce_optional_text(data: dict, key: str) -> str:
