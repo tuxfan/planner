@@ -44,9 +44,10 @@ tasks:
     expected duration: 1
     milestone: Initial Capability
     priority: medium
-    risk level: low
-    risk type: technical
-    risk mitigation: Keep the file format scope narrow for the first release.
+    risk:
+      - type: technical
+        level: low
+        mitigation: Keep the file format scope narrow for the first release.
     status: active
     description: >
       Add representative input support for unstructured data used by the
@@ -61,9 +62,10 @@ tasks:
     expected duration: 1
     milestone: Initial Capability
     priority: medium
-    risk level: low
-    risk type: technical
-    risk mitigation: Validate output with small representative datasets.
+    risk:
+      - type: technical
+        level: low
+        mitigation: Validate output with small representative datasets.
     status: pending
     description: >
       Add representative visualization output for structured and unstructured
@@ -78,9 +80,10 @@ tasks:
     expected duration: 1
     milestone: Integration
     priority: high
-    risk level: medium
-    risk type: technical
-    risk mitigation: Coordinate the workflow update with the application team.
+    risk:
+      - type: technical
+        level: medium
+        mitigation: Coordinate the workflow update with the application team.
     status: active
     description: >
       Integrate checkpoint and restart support into an anonymized application
@@ -95,9 +98,10 @@ tasks:
     expected duration: 5
     milestone: Integration Deliverable
     priority: high
-    risk level: low
-    risk type: schedule
-    risk mitigation: Add focused implementation time if backend support slips.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Add focused implementation time if backend support slips.
     status: active
     description: >
       Finish support for representative backends and topologies, prioritizing
@@ -112,9 +116,10 @@ tasks:
     expected duration: 5
     milestone: Integration Deliverable
     priority: high
-    risk level: low
-    risk type: schedule
-    risk mitigation: Add focused implementation time if application testing slips.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Add focused implementation time if application testing slips.
     status: active
     description: >
       Add representative support for multi-model data structures and test the
@@ -129,9 +134,10 @@ tasks:
     expected duration: 5
     milestone: Performance
     priority: medium
-    risk level: low
-    risk type: schedule
-    risk mitigation: Focus optimization work on the highest-impact access paths.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Focus optimization work on the highest-impact access paths.
     status: active
     description: >
       Improve internal sparse data layout representations for better
@@ -146,11 +152,12 @@ tasks:
     expected duration: 1
     milestone: Runtime Capability
     priority: medium
-    risk level: low
-    risk type: technical, schedule
-    risk mitigation: >
-      technical: Coordinate with the runtime maintainers.
-      schedule: Increase staffing focus if interface work slips.
+    risk:
+      - type: technical, schedule
+        level: low
+        mitigation: >
+          technical: Coordinate with the runtime maintainers.
+          schedule: Increase staffing focus if interface work slips.
     status: active
     description: >
       Extend the kernel interface with enhanced execution support for mixed CPU
@@ -165,9 +172,10 @@ tasks:
     expected duration: 1
     milestone: Topology Capability
     priority: medium
-    risk level: low
-    risk type: technical
-    risk mitigation: Validate the interface against representative particle methods.
+    risk:
+      - type: technical
+        level: low
+        mitigation: Validate the interface against representative particle methods.
     status: pending
     description: >
       Add topology support for representative non-interacting particle methods.
@@ -181,12 +189,13 @@ tasks:
     expected duration: 1
     milestone: Runtime Capability
     priority: medium
-    risk level: medium
-    risk type: technical, schedule, budgetary
-    risk mitigation: >
-      technical: Coordinate backend interface work with maintainers.
-      schedule: Add staffing if backend work slips.
-      budgetary: Defer lower-priority enhancements if needed.
+    risk:
+      - type: technical, schedule, budgetary
+        level: medium
+        mitigation: >
+          technical: Coordinate backend interface work with maintainers.
+          schedule: Add staffing if backend work slips.
+          budgetary: Defer lower-priority enhancements if needed.
     status: ongoing
     description: >
       Bring a representative backend path to production quality with accelerator
@@ -201,9 +210,10 @@ tasks:
     expected duration: 1
     milestone: Runtime Capability
     priority: high
-    risk level: medium
-    risk type: technical
-    risk mitigation: Coordinate performance feedback with runtime maintainers.
+    risk:
+      - type: technical
+        level: medium
+        mitigation: Coordinate performance feedback with runtime maintainers.
     status: active
     description: >
       Improve runtime performance through upstream feedback and focused
@@ -218,9 +228,10 @@ tasks:
     expected duration: 1
     milestone: Runtime Capability
     priority: medium
-    risk level: medium
-    risk type: technical
-    risk mitigation: Coordinate with backend maintainers on address-space movement.
+    risk:
+      - type: technical
+        level: medium
+        mitigation: Coordinate with backend maintainers on address-space movement.
     status: pending
     description: >
       Add support for dynamically moving data across representative execution
@@ -235,9 +246,10 @@ tasks:
     expected duration: 1
     milestone: Topology Capability
     priority: low
-    risk level: medium
-    risk type: technical
-    risk mitigation: Validate resizing behavior with small adaptive examples.
+    risk:
+      - type: technical
+        level: medium
+        mitigation: Validate resizing behavior with small adaptive examples.
     status: pending
     description: >
       Add interface support for ergonomic resizing of dynamic mesh connectivity.
@@ -251,9 +263,10 @@ tasks:
     expected duration: 1
     milestone: Runtime Capability
     priority: medium
-    risk level: medium
-    risk type: technical
-    risk mitigation: Validate mapping decisions with representative applications.
+    risk:
+      - type: technical
+        level: medium
+        mitigation: Validate mapping decisions with representative applications.
     status: active
     description: >
       Create a mapping architecture that uses system, topology, and application

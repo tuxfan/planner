@@ -52,9 +52,10 @@ tasks:
     expected duration: 5
     milestone: Integration Deliverable
     priority: high
-    risk level: low
-    risk type: schedule
-    risk mitigation: Add focused implementation time if backend support slips.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Add focused implementation time if backend support slips.
     status: active
     description: >
       Finish checkpoint and restart support for representative backends and
@@ -73,9 +74,10 @@ tasks:
     expected duration: 1
     milestone: Integration Deliverable
     priority: high
-    risk level: medium
-    risk type: technical
-    risk mitigation: Coordinate workflow changes with the application team.
+    risk:
+      - type: technical
+        level: medium
+        mitigation: Coordinate workflow changes with the application team.
     status: active
     description: >
       Integrate checkpoint and restart support into an anonymized application
@@ -94,9 +96,10 @@ tasks:
     expected duration: 5
     milestone: Integration Deliverable
     priority: high
-    risk level: low
-    risk type: schedule
-    risk mitigation: Keep memory management design consistent across platforms.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Keep memory management design consistent across platforms.
     status: active
     description: >
       Add representative mutator support for accelerator-oriented execution.
@@ -114,9 +117,10 @@ tasks:
     expected duration: 5
     milestone: Integration Deliverable
     priority: high
-    risk level: low
-    risk type: schedule
-    risk mitigation: Add application tests before broadening the feature scope.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Add application tests before broadening the feature scope.
     status: active
     description: >
       Extend multi-material and multi-model data structures for representative
@@ -135,9 +139,10 @@ tasks:
     expected duration: 5
     milestone: Integration Deliverable
     priority: high
-    risk level: low
-    risk type: schedule
-    risk mitigation: Test against reduced examples before full integration.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Test against reduced examples before full integration.
     status: active
     description: >
       Validate multi-material structures in anonymized representative
@@ -156,9 +161,10 @@ tasks:
     expected duration: 5
     milestone: Integration Deliverable
     priority: medium
-    risk level: low
-    risk type: schedule
-    risk mitigation: Focus updates on the representative workflow first.
+    risk:
+      - type: schedule
+        level: low
+        mitigation: Focus updates on the representative workflow first.
     status: active
     description: >
       Improve execution behavior needed by the anonymized integration workflow.

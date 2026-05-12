@@ -50,9 +50,10 @@ class PlannerTests(unittest.TestCase):
                         expected duration: 2
                         milestone: Design
                         priority: high
-                        risk level: low
-                        risk type: dependency
-                        risk mitigation: Close prerequisite questions before build starts.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Close prerequisite questions before build starts.
                         status: complete
                         description: First task.
                         project: Demo
@@ -66,9 +67,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: medium
-                        risk_level: medium
-                        risk_type: delivery
-                        risk_mitigation: Keep the implementation slice small and testable.
+                        risk:
+                          - type: delivery
+                            level: medium
+                            mitigation: Keep the implementation slice small and testable.
                         status: pending
                         description: Second task.
                         project: Demo
@@ -93,11 +95,66 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(tasks[0].tags, ("gpu", "restart"))
         self.assertEqual(tasks[1].funding_status, "proposed")
         self.assertEqual(tasks[1].tags, ("integration", "parser"))
-        self.assertEqual(tasks[0].risk_type, "dependency")
+        self.assertEqual(tasks[0].risks[0].type, "dependency")
         self.assertEqual(
-            tasks[0].risk_mitigation,
+            tasks[0].risks[0].mitigation,
             "Close prerequisite questions before build starts.",
         )
+
+    def test_loads_yaml_with_canonical_risk_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: VTK
+                      label: VTK Support
+                      site: LANL
+                      bnr: DP1518130
+                      type: labor
+                      tags: []
+                      project: Task-Parallel Specializations
+                      description: >
+                        Add VTK I/O support for unstructured mesh input.
+                      start: M1Q1FY26
+                      deadline: M1Q1FY26
+                      expected duration: 1
+                      milestone: Unassigned
+                      priority: medium
+                      status: active
+                      dependencies: []
+                      risk:
+                        - type: technical
+                          level: low
+                          mitigation: >
+                            Work with viz team.
+                        - type: schedule
+                          level: medium
+                          mitigation: >
+                            Add additional staffing.
+                      funding:
+                        fy27: 50K
+                        fy28: 100K
+                        fy29: 200K
+                        fy30: 50K
+                        fy31: 3000K
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            tasks = load_tasks(path)
+
+        self.assertEqual([task.id for task in tasks], ["VTK"])
+        self.assertEqual(tasks[0].risks[0].type, "technical")
+        self.assertEqual(tasks[0].risks[0].level, "low")
+        self.assertEqual(tasks[0].risks[0].mitigation, "Work with viz team.")
+        self.assertEqual(tasks[0].risks[1].type, "schedule")
+        self.assertEqual(tasks[0].risks[1].level, "medium")
+        self.assertEqual(tasks[0].risks[1].mitigation, "Add additional staffing.")
+        self.assertEqual(tasks[0].risks[0].type, "technical")
+        self.assertEqual(tasks[0].risks[0].level, "low")
+        self.assertEqual(tasks[0].funding["FY31"], "3000K")
 
     def test_loads_fiscal_range_and_task_funding(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -118,9 +175,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep the task small.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep the task small.
                         status: pending
                         description: First task.
                         project: Demo
@@ -162,9 +220,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep the task small.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep the task small.
                         status: pending
                         description: First task.
                         project: Demo
@@ -215,9 +274,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep the task small.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep the task small.
                         status: pending
                         description: First task.
                         project: Demo
@@ -265,9 +325,7 @@ class PlannerTests(unittest.TestCase):
                                 "expected_duration": 1,
                                 "milestone": "Design",
                                 "priority": "high",
-                                "risk_level": "low",
-                                "risk_type": "dependency",
-                                "risk_mitigation": "Keep the task small.",
+                                "risk": [{"type": "dependency", "level": "low", "mitigation": "Keep the task small."}],
                                 "status": "pending",
                                 "description": "First task.",
                                 "project": "Demo",
@@ -334,9 +392,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep the task small.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep the task small.
                         status: pending
                         description: First task.
                         project: Demo
@@ -362,9 +421,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: high
-                      risk_level: low
-                      risk_type: dependency
-                      risk_mitigation: Confirm all upstream work exists in the file.
+                      risk:
+                        - type: dependency
+                          level: low
+                          mitigation: Confirm all upstream work exists in the file.
                       status: pending
                       description: First task.
                       project: Demo
@@ -390,9 +450,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: high
-                      risk_level: low
-                      risk_type: dependency
-                      risk_mitigation: Use a compact identifier for dependency tracking.
+                      risk:
+                        - type: dependency
+                          level: low
+                          mitigation: Use a compact identifier for dependency tracking.
                       status: pending
                       description: First task.
                       project: Demo
@@ -419,9 +480,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep dependency ids aligned with task ids.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep dependency ids aligned with task ids.
                         status: pending
                         description: First task.
                         project: Demo
@@ -433,9 +495,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: medium
-                        risk_level: medium
-                        risk_type: dependency
-                        risk_mitigation: Keep dependency ids aligned with task ids.
+                        risk:
+                          - type: dependency
+                            level: medium
+                            mitigation: Keep dependency ids aligned with task ids.
                         status: pending
                         description: Second task.
                         project: Demo
@@ -464,9 +527,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep ids unique.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep ids unique.
                         status: pending
                         description: First task.
                         project: Demo
@@ -478,9 +542,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: medium
-                        risk_level: medium
-                        risk_type: delivery
-                        risk_mitigation: Keep ids unique.
+                        risk:
+                          - type: delivery
+                            level: medium
+                            mitigation: Keep ids unique.
                         status: pending
                         description: Second task.
                         project: Demo
@@ -508,9 +573,7 @@ class PlannerTests(unittest.TestCase):
                             "expected_duration": 1,
                             "milestone": "Build",
                             "priority": "high",
-                            "risk_level": "low",
-                            "risk_type": "sequencing",
-                            "risk_mitigation": "Resolve the dependency graph before execution.",
+                            "risk": [{"type": "sequencing", "level": "low", "mitigation": "Resolve the dependency graph before execution."}],
                             "status": "pending",
                             "description": "First task.",
                             "project": "Demo",
@@ -524,9 +587,7 @@ class PlannerTests(unittest.TestCase):
                             "expected_duration": 1,
                             "milestone": "Build",
                             "priority": "medium",
-                            "risk_level": "medium",
-                            "risk_type": "sequencing",
-                            "risk_mitigation": "Resolve the dependency graph before execution.",
+                            "risk": [{"type": "sequencing", "level": "medium", "mitigation": "Resolve the dependency graph before execution."}],
                             "status": "pending",
                             "description": "Second task.",
                             "project": "Demo",
@@ -554,9 +615,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: high
-                      risk_level: low
-                      risk_type: delivery
-                      risk_mitigation: Use a supported status value.
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Use a supported status value.
                       status: stalled
                       description: First task.
                       project: Demo
@@ -569,7 +631,7 @@ class PlannerTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 load_tasks(path)
 
-    def test_accepts_ongoing_status_urgent_priority_and_extreme_risk_level(self) -> None:
+    def test_accepts_ongoing_status_urgent_priority_and_extreme_risk(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "tasks.yaml"
             path.write_text(
@@ -582,9 +644,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: urgent
-                      risk_level: extreme
-                      risk_type: delivery
-                      risk_mitigation: Escalate immediately and review daily.
+                      risk:
+                        - type: delivery
+                          level: extreme
+                          mitigation: Escalate immediately and review daily.
                       status: ongoing
                       description: First task.
                       project: Demo
@@ -598,7 +661,7 @@ class PlannerTests(unittest.TestCase):
             schedule = build_schedule(tasks)
 
         self.assertEqual(tasks[0].priority, "urgent")
-        self.assertEqual(tasks[0].risk_level, "extreme")
+        self.assertEqual(tasks[0].risks[0].level, "extreme")
         self.assertEqual(tasks[0].status, "ongoing")
         self.assertEqual(schedule[0][1], "ONGOING")
 
@@ -615,9 +678,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: asap
-                      risk_level: low
-                      risk_type: delivery
-                      risk_mitigation: Use a supported priority value.
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Use a supported priority value.
                       status: pending
                       description: First task.
                       project: Demo
@@ -630,7 +694,7 @@ class PlannerTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 load_tasks(path)
 
-    def test_rejects_invalid_risk_level(self) -> None:
+    def test_rejects_invalid_risk_entry_level(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "tasks.yaml"
             path.write_text(
@@ -643,9 +707,35 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: high
-                      risk_level: severe
-                      risk_type: delivery
-                      risk_mitigation: Use a supported risk level value.
+                      risk:
+                        - type: delivery
+                          level: severe
+                          mitigation: Use a supported risk level value.
+                      status: pending
+                      description: First task.
+                      project: Demo
+                      dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValidationError):
+                load_tasks(path)
+
+    def test_rejects_missing_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: A1
+                      label: A
+                      start: M2Q3FY26
+                      deadline: M3Q3FY26
+                      expected_duration: 1
+                      milestone: Build
+                      priority: high
                       status: pending
                       description: First task.
                       project: Demo
@@ -671,9 +761,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 0
                       milestone: Build
                       priority: high
-                      risk_level: low
-                      risk_type: delivery
-                      risk_mitigation: Use a positive whole number of months.
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Use a positive whole number of months.
                       status: pending
                       description: First task.
                       project: Demo
@@ -699,9 +790,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: high
-                      risk_level: low
-                      risk_type: delivery
-                      risk_mitigation: Use a valid fiscal period code.
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Use a valid fiscal period code.
                       status: pending
                       description: First task.
                       project: Demo
@@ -727,9 +819,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Build
                       priority: high
-                      risk_level: low
-                      risk_type: delivery
-                      risk_mitigation: Keep the fiscal period sequence valid.
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Keep the fiscal period sequence valid.
                       status: pending
                       description: First task.
                       project: Demo
@@ -756,9 +849,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Finish the prerequisite task first.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Finish the prerequisite task first.
                         status: complete
                         description: First task.
                         project: Demo
@@ -770,9 +864,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: high
-                        risk_level: medium
-                        risk_type: delivery
-                        risk_mitigation: Keep the active work limited to one slice.
+                        risk:
+                          - type: delivery
+                            level: medium
+                            mitigation: Keep the active work limited to one slice.
                         status: active
                         description: Second task.
                         project: Demo
@@ -784,9 +879,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Test
                         priority: medium
-                        risk_level: medium
-                        risk_type: quality
-                        risk_mitigation: Wait for the implementation task to finish before testing.
+                        risk:
+                          - type: quality
+                            level: medium
+                            mitigation: Wait for the implementation task to finish before testing.
                         status: pending
                         description: Third task.
                         project: Demo
@@ -816,9 +912,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Design
                       priority: high
-                      risk_level: low
-                      risk_type: delivery
-                      risk_mitigation: Keep the validation path simple.
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Keep the validation path simple.
                       status: pending
                       description: First task.
                       project: Demo
@@ -907,9 +1004,10 @@ class PlannerTests(unittest.TestCase):
                       expected_duration: 1
                       milestone: Design
                       priority: high
-                      risk_level: low
-                      risk_type: delivery
-                      risk_mitigation: Keep the export path simple.
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Keep the export path simple.
                       status: pending
                       description: First task.
                       project: Demo
@@ -1024,9 +1122,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Finish the prerequisite task first.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Finish the prerequisite task first.
                         status: complete
                         description: First task.
                         project: Demo
@@ -1102,9 +1201,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Finish the prerequisite task first.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Finish the prerequisite task first.
                         status: complete
                         description: First task.
                         project: Demo
@@ -1173,9 +1273,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Finish the prerequisite task first.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Finish the prerequisite task first.
                         status: complete
                         description: First task.
                         project: Demo
@@ -1236,9 +1337,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Finish the prerequisite task first.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Finish the prerequisite task first.
                         status: complete
                         description: First task.
                         project: Demo
@@ -1318,9 +1420,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Launch
                         priority: medium
-                        risk_level: low
-                        risk_type: delivery
-                        risk_mitigation: Keep the kickoff scope narrow.
+                        risk:
+                          - type: delivery
+                            level: low
+                            mitigation: Keep the kickoff scope narrow.
                         status: pending
                         description: First task in FY27.
                         project: Demo
@@ -1332,9 +1435,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Wrap-up
                         priority: medium
-                        risk_level: low
-                        risk_type: delivery
-                        risk_mitigation: Close the FY26 work before rollover.
+                        risk:
+                          - type: delivery
+                            level: low
+                            mitigation: Close the FY26 work before rollover.
                         status: pending
                         description: Final task in FY26.
                         project: Demo
@@ -1389,9 +1493,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Finish the prerequisite task first.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Finish the prerequisite task first.
                         status: complete
                         description: First task.
                         project: Demo
@@ -1403,9 +1508,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: medium
-                        risk_level: medium
-                        risk_type: schedule
-                        risk_mitigation: Track the prerequisite task.
+                        risk:
+                          - type: schedule
+                            level: medium
+                            mitigation: Track the prerequisite task.
                         status: active
                         description: Second task.
                         project: Other
@@ -1495,9 +1601,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep the task small.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep the task small.
                         status: pending
                         description: First task.
                         project: Demo
@@ -1539,9 +1646,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Keep the task small.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Keep the task small.
                         status: pending
                         description: First task.
                         project: Demo
@@ -1581,9 +1689,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: high
-                        risk_level: low
-                        risk_type: dependency
-                        risk_mitigation: Finish the prerequisite task first.
+                        risk:
+                          - type: dependency
+                            level: low
+                            mitigation: Finish the prerequisite task first.
                         status: complete
                         description: First task.
                         project: Demo
@@ -1600,9 +1709,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 1
                         milestone: Build
                         priority: medium
-                        risk_level: high
-                        risk_type: delivery
-                        risk_mitigation: Keep the implementation slice small and testable.
+                        risk:
+                          - type: delivery
+                            level: high
+                            mitigation: Keep the implementation slice small and testable.
                         status: pending
                         description: Second task.
                         project: Demo
@@ -1644,9 +1754,10 @@ class PlannerTests(unittest.TestCase):
                         expected_duration: 2
                         milestone: Design
                         priority: urgent
-                        risk_level: extreme
-                        risk_type: delivery
-                        risk_mitigation: Escalate immediately and review daily.
+                        risk:
+                          - type: delivery
+                            level: extreme
+                            mitigation: Escalate immediately and review daily.
                         status: ongoing
                         description: First task.
                         project: Demo

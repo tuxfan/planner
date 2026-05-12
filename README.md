@@ -16,25 +16,23 @@ Each task supports these fields:
 
 - `id`: required string task id. Must contain only letters, numbers, or underscores, with no spaces.
 - `label`: required string display name for the task.
+- `site`: optional site or institution label.
 - `bnr`: optional budget and reporting identifier.
 - `cost`: optional task cost label, for example `$100K`.
 - `funding status` or `funding_status`: optional funding state label.
-- `funding`: optional mapping of fiscal year to funding level, for example `fy27: 50K`. A task is treated as unfunded for fiscal years not present in this mapping.
-- `site`: optional site or institution label.
 - `type`: optional task type label.
 - `tags`: optional comma-separated string or list of task tags.
+- `project`: required string project name.
+- `description`: required string describing the task.
 - `start`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
 - `deadline`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
 - `expected duration` or `expected_duration`: required positive whole number of months.
 - `milestone`: required string milestone name.
 - `priority`: required string priority label such as `low`, `medium`, `high`, or `urgent`.
-- `risk level` or `risk_level`: required string risk severity label such as `low`, `medium`, `high`, or `extreme`.
-- `risk type` or `risk_type`: required string risk category.
-- `risk mitigation` or `risk_mitigation`: required string describing how the risk will be mitigated.
 - `status`: required string status. Allowed values are `pending`, `active`, `ongoing`, `blocked`, and `complete`.
-- `description`: required string describing the task.
-- `project`: required string project name.
 - `dependencies`: required list of task ids. Each dependency must reference another task `id`.
+- `risk`: required risk entry or list of risk entries. Each entry has `type`, `level`, and `mitigation`; `level` must be `low`, `medium`, `high`, or `extreme`.
+- `funding`: optional mapping of fiscal year to funding level, for example `fy27: 50K`. A task is treated as unfunded for fiscal years not present in this mapping.
 
 ## Quick start
 
@@ -124,41 +122,43 @@ tasks:
     bnr: DP1518130
     cost: $100K
     funding status: funded
-    funding:
-      fy27: 50K
-      fy29: 100K
     site: LANL
     type: labor
     tags:
       - architecture
+    project: Planning System
+    description: Produce the first architecture draft.
     start: M1Q3FY26
     deadline: M2Q3FY26
     expected duration: 2
     milestone: Design
     priority: high
-    risk level: medium
-    risk type: scope
-    risk mitigation: Review the architecture with stakeholders before implementation starts.
     status: complete
-    description: Produce the first architecture draft.
-    project: Planning System
     dependencies: []
+    risk:
+      - type: scope
+        level: medium
+        mitigation: Review the architecture with stakeholders before implementation starts.
+    funding:
+      fy27: 50K
+      fy29: 100K
 
   - id: BuildParser
     label: Build parser
+    project: Planning System
+    description: Load task definitions from YAML and Python files.
     start: M2Q3FY26
     deadline: M2Q3FY26
     expected_duration: 1
     milestone: Implementation
     priority: high
-    risk_level: medium
-    risk_type: integration
-    risk_mitigation: Add schema validation tests for both YAML and Python task sources.
     status: pending
-    description: Load task definitions from YAML and Python files.
-    project: Planning System
     dependencies:
       - DraftArchitecture
+    risk:
+      - type: integration
+        level: medium
+        mitigation: Add schema validation tests for both YAML and Python task sources.
 ```
 
 ## Python format
@@ -190,22 +190,26 @@ PLAN = {
             "bnr": "DP1518130",
             "cost": "$100K",
             "funding_status": "funded",
-            "funding": {"fy27": "50K", "fy29": "100K"},
             "site": "LANL",
             "type": "labor",
             "tags": ["architecture"],
+            "project": "Planning System",
+            "description": "Produce the first architecture draft.",
             "start": "M1Q3FY26",
             "deadline": "M2Q3FY26",
             "expected_duration": 2,
             "milestone": "Design",
             "priority": "high",
-            "risk_level": "medium",
-            "risk_type": "scope",
-            "risk_mitigation": "Review the architecture with stakeholders before implementation starts.",
             "status": "complete",
-            "description": "Produce the first architecture draft.",
-            "project": "Planning System",
             "dependencies": [],
+            "risk": [
+                {
+                    "type": "scope",
+                    "level": "medium",
+                    "mitigation": "Review the architecture with stakeholders before implementation starts.",
+                }
+            ],
+            "funding": {"fy27": "50K", "fy29": "100K"},
         }
     ],
 }

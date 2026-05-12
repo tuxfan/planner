@@ -352,12 +352,13 @@ def _print_tasks(tasks) -> None:
         print(
             f"{task.start} -> {task.deadline} | "
             f"{task.expected_duration} month(s) | {task.project} | {task.milestone} | "
-            f"{task.priority} | risk={task.risk_level}/{task.risk_type} | "
+            f"{task.priority} | risk={_task_risk_summary(task)} | "
             f"status={task.status} | {task.label} [{task.id}]"
         )
         if metadata:
             print(f"  attributes: {metadata}")
-        print(f"  mitigation: {task.risk_mitigation}")
+        for risk in task.risks:
+            print(f"  mitigation ({risk.type}/{risk.level}): {risk.mitigation}")
         print(f"  dependencies (ids): {dependencies}")
         print(f"  description: {task.description}")
 
@@ -396,9 +397,14 @@ def _print_schedule(tasks) -> None:
         print(f"  milestone: {task.milestone}")
         if metadata:
             print(f"  attributes: {metadata}")
-        print(f"  risk: {task.risk_level}/{task.risk_type}")
-        print(f"  mitigation: {task.risk_mitigation}")
+        print(f"  risk: {_task_risk_summary(task)}")
+        for risk in task.risks:
+            print(f"  mitigation ({risk.type}/{risk.level}): {risk.mitigation}")
         print(f"  dependencies (ids): {dependencies}")
+
+
+def _task_risk_summary(task) -> str:
+    return ", ".join(f"{risk.level}/{risk.type}" for risk in task.risks) or "-"
 
 
 def _task_metadata(task) -> str:

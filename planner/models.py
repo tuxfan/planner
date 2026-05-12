@@ -17,9 +17,7 @@ REQUIRED_FIELDS = {
     "expected_duration",
     "milestone",
     "priority",
-    "risk_level",
-    "risk_type",
-    "risk_mitigation",
+    "risk",
     "status",
     "description",
     "project",
@@ -38,12 +36,7 @@ FIELD_ALIASES = {
     "funding status": "funding_status",
     "funding_status": "funding_status",
     "funding": "funding",
-    "risk level": "risk_level",
-    "risk_level": "risk_level",
-    "risk type": "risk_type",
-    "risk_type": "risk_type",
-    "risk mitigation": "risk_mitigation",
-    "risk_mitigation": "risk_mitigation",
+    "risk": "risk",
     "site": "site",
     "tags": "tags",
     "type": "type",
@@ -61,6 +54,44 @@ ALLOWED_STATUSES = {"pending", "active", "ongoing", "blocked", "complete"}
 
 
 @dataclass(frozen=True)
+class Risk:
+    type: str
+    level: str
+    mitigation: str
+
+    @classmethod
+    def from_mapping(cls, raw: Mapping[str, object], *, label: str, index: int) -> "Risk":
+        if not isinstance(raw, Mapping):
+            raise ValidationError(
+                f"Task '{label}' has invalid risk item #{index}; expected a mapping."
+            )
+
+        missing = {"type", "level", "mitigation"} - raw.keys()
+        if missing:
+            raise ValidationError(
+                f"Task '{label}' risk item #{index} is missing fields: "
+                + ", ".join(sorted(missing))
+            )
+
+        risk_type = str(raw["type"]).strip()
+        risk_level = str(raw["level"]).strip().lower()
+        risk_mitigation = str(raw["mitigation"]).strip()
+        if not risk_type:
+            raise ValidationError(f"Task '{label}' risk item #{index} has empty type.")
+        if risk_level not in ALLOWED_RISK_LEVELS:
+            raise ValidationError(
+                f"Task '{label}' has invalid risk level '{raw['level']}'. "
+                "Use low, medium, high, or extreme."
+            )
+        if not risk_mitigation:
+            raise ValidationError(
+                f"Task '{label}' risk item #{index} has empty mitigation."
+            )
+
+        return cls(type=risk_type, level=risk_level, mitigation=risk_mitigation)
+
+
+@dataclass(frozen=True)
 class Task:
     id: str
     label: str
@@ -69,9 +100,7 @@ class Task:
     expected_duration: int
     milestone: str
     priority: str
-    risk_level: str
-    risk_type: str
-    risk_mitigation: str
+    risks: tuple[Risk, ...]
     status: str
     description: str
     project: str
@@ -144,12 +173,7 @@ class Task:
                 "Use low, medium, high, or urgent."
             )
 
-        risk_level = str(normalized["risk_level"]).strip().lower()
-        if risk_level not in ALLOWED_RISK_LEVELS:
-            raise ValidationError(
-                f"Task '{label}' has invalid risk_level '{normalized['risk_level']}'. "
-                "Use low, medium, high, or extreme."
-            )
+        risks = _coerce_task_risks(normalized, label)
 
         status = str(normalized["status"]).strip().lower()
         if status not in ALLOWED_STATUSES:
@@ -166,9 +190,7 @@ class Task:
             expected_duration=expected_duration,
             milestone=str(normalized["milestone"]).strip(),
             priority=priority,
-            risk_level=risk_level,
-            risk_type=str(normalized["risk_type"]).strip(),
-            risk_mitigation=str(normalized["risk_mitigation"]).strip(),
+            risks=risks,
             status=status,
             description=str(normalized["description"]).strip(),
             project=str(normalized["project"]).strip(),
@@ -267,6 +289,20 @@ def _coerce_optional_task_tags(raw: Mapping[str, object]) -> tuple[str, ...]:
     if not isinstance(value, list):
         raise ValidationError("Task field 'tags' must be text or a list when provided.")
     return tuple(str(item).strip() for item in value if str(item).strip())
+
+
+def _coerce_task_risks(raw: Mapping[str, object], label: str) -> tuple[Risk, ...]:
+    value = raw["risk"]
+    if isinstance(value, Mapping):
+        return (Risk.from_mapping(value, label=label, index=1),)
+    if isinstance(value, list):
+        if not value:
+            raise ValidationError(f"Task '{label}' field 'risk' cannot be empty.")
+        return tuple(
+            Risk.from_mapping(item, label=label, index=index)
+            for index, item in enumerate(value, 1)
+        )
+    raise ValidationError(f"Task '{label}' field 'risk' must be a mapping or list.")
 
 
 def _coerce_task_funding(raw: Mapping[str, object], label: str) -> Mapping[str, str]:

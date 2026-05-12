@@ -21,6 +21,7 @@ RISK_COLORS = {
     "high": "#BC6C25",
     "extreme": "#AE2012",
 }
+RISK_ORDER = {"low": 0, "medium": 1, "high": 2, "extreme": 3}
 
 PRIORITY_COLORS = {
     "low": "#ADB5BD",
@@ -395,11 +396,16 @@ def _activity_paragraphs(tasks: list[Task]) -> list[str]:
 def _risk_mitigation_paragraphs(
     tasks: list[Task], task_numbers: dict[str, str]
 ) -> list[str]:
-    return [
-        _labeled_paragraph(task_numbers[task.id], task.risk_mitigation)
-        for task in tasks
-        if task.risk_mitigation
-    ]
+    paragraphs = []
+    for task in tasks:
+        for risk in task.risks:
+            paragraphs.append(
+                _labeled_paragraph(
+                    f"{task_numbers[task.id]} {risk.type}/{risk.level}",
+                    risk.mitigation,
+                )
+            )
+    return paragraphs
 
 
 def _task_table(
@@ -635,11 +641,13 @@ def _svg_document(
     for position, state, task in schedule:
         x, y, _ = positions[task.id]
         fill = STATUS_COLORS.get(task.status, "#FFFFFF")
-        stroke = RISK_COLORS.get(task.risk_level.lower(), "#495057")
+        risk_level = _highest_risk_level(task)
+        stroke = RISK_COLORS.get(risk_level, "#495057")
         accent = PRIORITY_COLORS.get(task.priority.lower(), "#495057")
         dependencies = ", ".join(task.dependencies) if task.dependencies else "None"
         attributes = _task_attribute_summary(task)
         description = _wrap_text(task.description, 34)[:2]
+        risk_summary = _task_risk_summary(task)
         text_y = y + 28
         elements.extend(
             [
@@ -651,7 +659,7 @@ def _svg_document(
                 f'<text x="{x + 22}" y="{text_y + 40}" font-family="Arial, sans-serif" font-size="11" fill="#495057">id {escape(task.id)}</text>',
                 f'<text x="{x + 22}" y="{text_y + 58}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">{escape(task.milestone)} | {task.start} to {task.deadline}</text>',
                 f'<text x="{x + 22}" y="{text_y + 76}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">duration {task.expected_duration} month(s)</text>',
-                f'<text x="{x + 22}" y="{text_y + 94}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">risk {escape(task.risk_level)}/{escape(task.risk_type)}</text>',
+                f'<text x="{x + 22}" y="{text_y + 94}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">risk {escape(risk_summary)}</text>',
                 f'<text x="{x + 22}" y="{text_y + 112}" font-family="Arial, sans-serif" font-size="12" fill="#343A40">deps {escape(dependencies)}</text>',
             ]
         )
@@ -689,6 +697,16 @@ def _wrap_text(text: str, width: int) -> list[str]:
             current = word
     lines.append(current)
     return lines
+
+
+def _highest_risk_level(task: Task) -> str:
+    if not task.risks:
+        return ""
+    return max(task.risks, key=lambda risk: RISK_ORDER.get(risk.level, -1)).level
+
+
+def _task_risk_summary(task: Task) -> str:
+    return ", ".join(f"{risk.level}/{risk.type}" for risk in task.risks) or "-"
 
 
 def _slug(value: str) -> str:

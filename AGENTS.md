@@ -46,9 +46,9 @@ Each task includes:
 - `start`, `deadline`
 - `expected_duration`
 - `milestone`, `priority`
-- `risk_level`, `risk_type`, `risk_mitigation`
 - `status`, `description`, `project`
 - `dependencies`
+- `risk`: entry or list of entries with `type`, `level`, and `mitigation`
 
 Accepted aliases currently handled in code:
 
@@ -61,9 +61,7 @@ Accepted aliases currently handled in code:
 - `expected duration` -> `expected_duration`
 - `funding status` -> `funding_status`
 - `funding` -> `funding`
-- `risk level` -> `risk_level`
-- `risk type` -> `risk_type`
-- `risk mitigation` -> `risk_mitigation`
+- `risk` -> `risk`
 - `site` -> `site`
 - `tags` -> `tags`
 - `type` -> `type`
@@ -75,6 +73,8 @@ Validation rules currently enforced:
 - `dependencies` must be a list
 - `start` and `deadline` must use fiscal period values like `M1Q1FY26`
 - `expected_duration` must be a positive integer
+- `risk` must be a non-empty mapping or list of mappings with `type`, `level`, and `mitigation`
+- risk `level` must be one of `low`, `medium`, `high`, `extreme`
 - `start` cannot be after `deadline` in fiscal period order
 - `status` must be one of `pending`, `active`, `ongoing`, `blocked`, `complete`
 - dependency ids must exist
@@ -162,3 +162,10 @@ Validation rules currently enforced:
 - Updated CLI metadata, summary output, `.docx` metadata, task narratives, and task summary tables to include per-fiscal-year funding totals and one table column per fiscal year.
 - Validated the current `TUXFAN_PLANNER_DATAFILE` shape with fiscal years FY27-FY31 and funding levels such as `50K`, `100K`, and `1M`-style values.
 - Added first-class optional `site` task metadata with CLI/export rendering, export-option support, README documentation, examples, and tests.
+
+### 2026-05-12
+
+- Updated task risk input to the canonical `risk` field, accepting a mapping or list of mappings with `type`, `level`, and `mitigation`.
+- Removed the old split risk fields from the documented input schema and converted README examples, planner examples, tests, and data fixtures to the new `risk` block shape.
+- Updated CLI, `.docx`, and `.svg` risk rendering to handle multiple risk entries per task; SVG border color now reflects the highest risk level on the task.
+- Validated the new task format against `/Users/bergen/tmp.yaml`.
