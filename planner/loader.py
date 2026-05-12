@@ -5,9 +5,26 @@ import runpy
 
 import yaml
 
-from .models import ExecutionItem, ProjectPlan, Task, ValidationError, validate_tasks
+from .models import (
+    ExecutionItem,
+    ProjectPlan,
+    Task,
+    ValidationError,
+    fiscal_year_range,
+    validate_tasks,
+)
 
-METADATA_KEYS = {"portfolio", "project", "managers", "pocs", "summary", "execution"}
+METADATA_KEYS = {
+    "portfolio",
+    "project",
+    "managers",
+    "pocs",
+    "summary",
+    "execution",
+    "fiscal_range_begin",
+    "fiscal_range_end",
+    "fiscal_years",
+}
 
 
 def load_tasks(path: str | Path) -> list[Task]:
@@ -78,6 +95,7 @@ def _coerce_plan(data: object, path: Path) -> ProjectPlan:
         managers=_coerce_optional_text_list(data, "managers"),
         pocs=_coerce_optional_text_list(data, "pocs"),
         summary=_coerce_optional_text(data, "summary"),
+        fiscal_years=_coerce_fiscal_years(data),
         execution_overview=execution_overview,
         execution=execution_items,
         metadata=metadata,
@@ -114,6 +132,28 @@ def _coerce_optional_text_list(data: dict, key: str) -> tuple[str, ...]:
     if not isinstance(value, list):
         raise ValidationError(f"Top-level '{key}' must be a list of text values.")
     return tuple(str(item).strip() for item in value if str(item).strip())
+
+
+def _coerce_fiscal_years(data: dict) -> tuple[str, ...]:
+    if "fiscal_range_begin" in data or "fiscal_range_end" in data:
+        if "fiscal_range_begin" not in data or "fiscal_range_end" not in data:
+            raise ValidationError(
+                "Top-level fiscal year range requires both "
+                "'fiscal_range_begin' and 'fiscal_range_end'."
+            )
+        return fiscal_year_range(data["fiscal_range_begin"], data["fiscal_range_end"])
+
+    value = data.get("fiscal_years", [])
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ValidationError("Top-level 'fiscal_years' must be a list.")
+    years = []
+    for item in value:
+        year = fiscal_year_range(item, item)[0]
+        if year not in years:
+            years.append(year)
+    return tuple(years)
 
 
 def _coerce_execution(data: dict) -> tuple[str, tuple[ExecutionItem, ...]]:

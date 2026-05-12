@@ -9,6 +9,7 @@ A plan can include optional top-level project metadata:
 - `managers`: list of manager names.
 - `pocs`: list of point-of-contact names.
 - `summary`: high-level plan summary.
+- `fiscal_range_begin` and `fiscal_range_end`: optional fiscal year range covered by the plan, for example `27` through `31`.
 - `execution`: execution metadata. It can be a mapping with `overview` text and `sections`, where each section has `label` and `description`. The older flat list of sections is still accepted.
 
 Each task supports these fields:
@@ -18,6 +19,8 @@ Each task supports these fields:
 - `bnr`: optional budget and reporting identifier.
 - `cost`: optional task cost label, for example `$100K`.
 - `funding status` or `funding_status`: optional funding state label.
+- `funding`: optional mapping of fiscal year to funding level, for example `fy27: 50K`. A task is treated as unfunded for fiscal years not present in this mapping.
+- `site`: optional site or institution label.
 - `type`: optional task type label.
 - `tags`: optional comma-separated string or list of task tags.
 - `start`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
@@ -94,7 +97,7 @@ The generated completion supports the basic planner subcommands, the
 
 ## YAML format
 
-Top-level can be either a list of tasks or a mapping with a `tasks` key. The mapping form can also include plan-level metadata such as `portfolio`, `project`, `managers`, `pocs`, `summary`, and `execution`.
+Top-level can be either a list of tasks or a mapping with a `tasks` key. The mapping form can also include plan-level metadata such as `portfolio`, `project`, `managers`, `pocs`, `summary`, `fiscal_range_begin`, `fiscal_range_end`, and `execution`.
 
 ```yaml
 portfolio: Advanced Simulation and Computing
@@ -105,6 +108,8 @@ pocs:
   - Casey Example, PI
 summary: >
   High-level planning context for the task collection.
+fiscal_range_begin: 27
+fiscal_range_end: 29
 execution:
   overview: >
     Overall execution context for the plan.
@@ -119,6 +124,10 @@ tasks:
     bnr: DP1518130
     cost: $100K
     funding status: funded
+    funding:
+      fy27: 50K
+      fy29: 100K
+    site: LANL
     type: labor
     tags:
       - architecture
@@ -163,6 +172,8 @@ PLAN = {
     "managers": ["Alice Example"],
     "pocs": ["Casey Example, PI"],
     "summary": "High-level planning context for the task collection.",
+    "fiscal_range_begin": 27,
+    "fiscal_range_end": 29,
     "execution": {
         "overview": "Overall execution context for the plan.",
         "sections": [
@@ -179,6 +190,8 @@ PLAN = {
             "bnr": "DP1518130",
             "cost": "$100K",
             "funding_status": "funded",
+            "funding": {"fy27": "50K", "fy29": "100K"},
+            "site": "LANL",
             "type": "labor",
             "tags": ["architecture"],
             "start": "M1Q3FY26",
@@ -233,9 +246,9 @@ Examples:
 
 - `validate`: checks required fields, invalid status values, invalid fiscal period or duration values, invalid ids, duplicate ids, missing dependencies, and dependency cycles
 - `list`: prints task details in deadline order by default, including fiscal start and deadline values and expected duration in months
-- `summary`: groups tasks by project and milestone
+- `summary`: groups tasks by project and milestone and prints funding totals when task funding is present
 - `schedule`: prints tasks in dependency order and marks them as `READY`, `BLOCKED`, `ACTIVE`, or `COMPLETE`
-- `export-docx`: generates a Word document with the schedule and a detailed task table. Use `--export-options PATH` or `TUXFAN_PLANNER_EXPORT_OPTIONS` to control which optional task attributes appear in the summary table and in the per-task narrative metadata.
+- `export-docx`: generates a Word document with the schedule and a detailed task table. Use `--export-options PATH` or `TUXFAN_PLANNER_EXPORT_OPTIONS` to control which optional task attributes appear in the summary table and in the per-task narrative metadata. When fiscal years are configured, the table also includes one column per fiscal year with each task's funding level or a blank cell when the task is not funded in that year.
 - `export-svg`: generates a graphical SVG plan where fill color reflects status, border color reflects risk level, and an accent bar reflects priority. It also accepts `--export-options PATH` for CLI consistency, though the current table-column options affect the Word export table only.
 
 ## Export options
@@ -247,6 +260,7 @@ Supported attribute names:
 - `bnr`
 - `cost`
 - `funding` or `funding_status`
+- `site`
 - `type`
 - `tags`
 
@@ -254,6 +268,7 @@ Simple YAML:
 
 ```yaml
 task_table_attributes:
+  - site
   - bnr
   - funding
   - tags

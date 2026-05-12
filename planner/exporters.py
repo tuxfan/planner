@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from .export_options import ExportOptions
-from .models import ProjectPlan, Task, build_schedule, validate_tasks
+from .models import ProjectPlan, Task, build_schedule, funding_totals, validate_tasks
 
 STATUS_COLORS = {
     "pending": "#F9E2AE",
@@ -47,6 +47,7 @@ TASK_TABLE_REQUIRED_COLUMNS = (
 )
 
 TASK_TABLE_ATTRIBUTE_COLUMNS = {
+    "site": ("Site", 550, lambda task: task.site or "-"),
     "bnr": ("BNR", 750, lambda task: task.bnr or "-"),
     "cost": ("Cost", 650, lambda task: task.cost or "-"),
     "funding_status": ("Funding", 700, lambda task: task.funding_status or "-"),
@@ -161,7 +162,9 @@ def _document_xml(
         [
             _paragraph("Resourcing/Schedule:", style="Heading1"),
             _paragraph("Task Summary Table:", style="Heading2"),
-            _task_table(tasks, schedule, task_numbers, export_options),
+            _task_table(
+                tasks, schedule, task_numbers, export_options, plan.fiscal_years
+            ),
             _paragraph("Risk Mitigation:", style="Heading1"),
             *_risk_mitigation_paragraphs(tasks, task_numbers),
         ]
@@ -191,6 +194,20 @@ def _metadata_paragraphs(plan: ProjectPlan) -> list[str]:
                 *[_paragraph(line) for line in _summary_lines(plan.summary)],
             ]
         )
+    if plan.fiscal_years:
+        totals = funding_totals(plan.tasks, plan.fiscal_years)
+        body.append(_labeled_paragraph("Fiscal Years", ", ".join(plan.fiscal_years)))
+        if totals:
+            body.append(
+                _labeled_paragraph(
+                    "Funding Totals",
+                    ", ".join(
+                        f"{year}: {totals.get(year, '')}"
+                        for year in plan.fiscal_years
+                        if totals.get(year)
+                    ),
+                )
+            )
     return body
 
 
@@ -390,6 +407,7 @@ def _task_table(
     schedule: list[tuple[int, str, Task]],
     task_numbers: dict[str, str],
     export_options: ExportOptions,
+    fiscal_years: tuple[str, ...] = (),
 ) -> str:
     schedule_state = {task.id: state for _, state, task in schedule}
     configured_columns = export_options.resolved_task_table_columns()
@@ -411,6 +429,17 @@ def _task_table(
             for header, width, formatter in [
                 TASK_TABLE_ATTRIBUTE_COLUMNS[column.attribute]
             ]
+        ],
+        *[
+            (
+                year,
+                650,
+                lambda task, task_numbers, schedule_state, year=year: task.funding.get(
+                    year, ""
+                ),
+                "center",
+            )
+            for year in fiscal_years
         ],
     ]
     headers = [header for header, _, _, _ in columns]
@@ -483,12 +512,21 @@ def _task_attribute_summary(
 ) -> str:
     options = export_options or ExportOptions()
     parts = []
+    if "site" in options.task_table_attributes and task.site:
+        parts.append(f"Site: {task.site}")
     if "bnr" in options.task_table_attributes and task.bnr:
         parts.append(f"BNR: {task.bnr}")
     if "cost" in options.task_table_attributes and task.cost:
         parts.append(f"Cost: {task.cost}")
     if "funding_status" in options.task_table_attributes and task.funding_status:
         parts.append(f"Funding: {task.funding_status}")
+    if task.funding:
+        parts.append(
+            "Funding Levels: "
+            + ", ".join(
+                f"{year}: {level}" for year, level in sorted(task.funding.items())
+            )
+        )
     if "type" in options.task_table_attributes and task.type:
         parts.append(f"Type: {task.type}")
     if "tags" in options.task_table_attributes and task.tags:

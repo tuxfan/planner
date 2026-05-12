@@ -12,8 +12,8 @@ It loads task definitions from YAML or Python files, validates them, prints summ
 - Dependency: `PyYAML>=6.0`
 - CLI entry point: `project-planner = planner.cli:main`
 - Example data: `planner/examples/tasks.yaml` and `planner/examples/tasks.py`
-- Top-level plan metadata: `portfolio`, `project`, `managers`, `pocs`, `summary`, and `execution`
-- Optional task metadata: `bnr`, `cost`, `funding_status`, `type`, and `tags`
+- Top-level plan metadata: `portfolio`, `project`, `managers`, `pocs`, `summary`, `fiscal_range_begin`/`fiscal_range_end`, and `execution`
+- Optional task metadata: `bnr`, `cost`, `funding_status`, `funding`, `site`, `type`, and `tags`
 
 ## Repository Map
 
@@ -34,12 +34,15 @@ Plan files can be a raw task list or a mapping with `tasks` plus optional metada
 - `managers`: list of manager names
 - `pocs`: list of point-of-contact names
 - `summary`: high-level plan summary
+- `fiscal_range_begin` and `fiscal_range_end`: fiscal year range covered by the plan, normalized to fiscal year labels like `FY27`
 - `execution`: mapping with optional `overview` text and `sections` list of execution/deliverable narratives with `label` and `description`; legacy flat lists are still accepted
 
 Each task includes:
 
 - `id`, `label`
-- `bnr`, `cost`, `funding_status`, `type`, `tags`
+- `bnr`, `cost`, `funding_status`, `funding`, `site`, `type`, `tags`
+- `funding`: mapping of fiscal year label to funding level, e.g. `fy27: 50K`; missing fiscal years are treated as unfunded for that task
+- `site`: site or institution label
 - `start`, `deadline`
 - `expected_duration`
 - `milestone`, `priority`
@@ -57,9 +60,11 @@ Accepted aliases currently handled in code:
 - `deadline month` -> `deadline`
 - `expected duration` -> `expected_duration`
 - `funding status` -> `funding_status`
+- `funding` -> `funding`
 - `risk level` -> `risk_level`
 - `risk type` -> `risk_type`
 - `risk mitigation` -> `risk_mitigation`
+- `site` -> `site`
 - `tags` -> `tags`
 - `type` -> `type`
 
@@ -80,8 +85,9 @@ Validation rules currently enforced:
 
 - `list` prints task details in validated sort order.
 - `summary` groups counts by project and milestone.
+- Funding totals are emitted per fiscal year when plan fiscal years and task funding are present.
 - `schedule` uses dependency order and emits `COMPLETE`, `ACTIVE`, `READY`, or `BLOCKED`.
-- `export-docx` writes a minimal Word document directly as zipped XML, using a reference-style narrative plan layout with execution narratives and compact per-project task numbers in the summary table.
+- `export-docx` writes a minimal Word document directly as zipped XML, using a reference-style narrative plan layout with execution narratives, compact per-project task numbers in the summary table, and fiscal-year funding columns when a plan fiscal range is configured.
 - `export-svg` renders project lanes, dependency arrows, and task cards with status/risk/priority colors.
 - `load_plan()` returns a `ProjectPlan` with validated tasks plus optional metadata; `load_tasks()` remains as a backward-compatible task-list wrapper.
 
@@ -148,3 +154,11 @@ Validation rules currently enforced:
 - Removed `ProjectPlan.title` and changed document/SVG export headings to use `project` directly, avoiding duplicate `Project Title` and `Project` output in generated documents.
 - Added a `completion` CLI command that prints self-contained shell completion scripts for `bash`, `zsh`, and `fish`, covering planner subcommands, file path arguments, the `tuxfan-planner` alias, and export `--export-options`.
 - Restored missing repository fixtures under `data/` by creating anonymized `tasks.yaml` and `ristra.yaml` files based on the shape of the current `TUXFAN_PLANNER_DATAFILE`, and updated tests to assert anonymized values.
+
+### 2026-05-11
+
+- Added support for top-level `fiscal_range_begin`/`fiscal_range_end` and normalized fiscal year labels like `FY27`.
+- Added task-level `funding` metadata as fiscal-year funding levels, with missing years treated as unfunded for that task.
+- Updated CLI metadata, summary output, `.docx` metadata, task narratives, and task summary tables to include per-fiscal-year funding totals and one table column per fiscal year.
+- Validated the current `TUXFAN_PLANNER_DATAFILE` shape with fiscal years FY27-FY31 and funding levels such as `50K`, `100K`, and `1M`-style values.
+- Added first-class optional `site` task metadata with CLI/export rendering, export-option support, README documentation, examples, and tests.

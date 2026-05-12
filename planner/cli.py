@@ -8,7 +8,7 @@ from collections import defaultdict
 from .export_options import load_export_options
 from .exporters import write_docx, write_svg
 from .loader import load_plan
-from .models import ValidationError, build_schedule
+from .models import ValidationError, build_schedule, funding_totals
 
 TASK_FILE_ENV_VAR = "TUXFAN_PLANNER_DATAFILE"
 EXPORT_OPTIONS_ENV_VAR = "TUXFAN_PLANNER_EXPORT_OPTIONS"
@@ -126,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "summary":
         _print_plan_metadata(plan)
-        _print_summary(tasks)
+        _print_summary(tasks, fiscal_years=plan.fiscal_years)
         return 0
 
     if args.command == "schedule":
@@ -299,6 +299,7 @@ def _print_plan_metadata(plan) -> None:
             plan.managers,
             plan.pocs,
             plan.summary,
+            plan.fiscal_years,
             plan.execution_overview,
             plan.execution,
         )
@@ -317,6 +318,18 @@ def _print_plan_metadata(plan) -> None:
         for line in plan.summary.splitlines():
             if line.strip():
                 print(f"  {line.strip()}")
+    if plan.fiscal_years:
+        print("Fiscal Years: " + ", ".join(plan.fiscal_years))
+        totals = funding_totals(plan.tasks, plan.fiscal_years)
+        if totals:
+            print(
+                "Funding Totals: "
+                + ", ".join(
+                    f"{year}={totals.get(year, '')}"
+                    for year in plan.fiscal_years
+                    if totals.get(year)
+                )
+            )
     if plan.execution_overview:
         print("Execution Overview:")
         for line in plan.execution_overview.splitlines():
@@ -349,15 +362,25 @@ def _print_tasks(tasks) -> None:
         print(f"  description: {task.description}")
 
 
-def _print_summary(tasks) -> None:
+def _print_summary(tasks, fiscal_years: tuple[str, ...] = ()) -> None:
     grouped = defaultdict(lambda: defaultdict(int))
+    inferred_fiscal_years = []
     for task in tasks:
         grouped[task.project][task.milestone] += 1
+        for year in task.funding:
+            if year not in inferred_fiscal_years:
+                inferred_fiscal_years.append(year)
 
     for project in sorted(grouped):
         print(project)
         for milestone in sorted(grouped[project]):
             print(f"  {milestone}: {grouped[project][milestone]} task(s)")
+
+    if not fiscal_years and inferred_fiscal_years:
+        totals = funding_totals(tasks, sorted(inferred_fiscal_years))
+        print("Funding Totals")
+        for year in sorted(inferred_fiscal_years):
+            print(f"  {year}: {totals.get(year, '')}")
 
 
 def _print_schedule(tasks) -> None:
@@ -380,12 +403,21 @@ def _print_schedule(tasks) -> None:
 
 def _task_metadata(task) -> str:
     parts = []
+    if task.site:
+        parts.append(f"site={task.site}")
     if task.bnr:
         parts.append(f"bnr={task.bnr}")
     if task.cost:
         parts.append(f"cost={task.cost}")
     if task.funding_status:
         parts.append(f"funding={task.funding_status}")
+    if task.funding:
+        parts.append(
+            "funding_levels="
+            + ", ".join(
+                f"{year}:{level}" for year, level in sorted(task.funding.items())
+            )
+        )
     if task.type:
         parts.append(f"type={task.type}")
     if task.tags:

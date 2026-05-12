@@ -40,6 +40,7 @@ class PlannerTests(unittest.TestCase):
                         bnr: DP1518130
                         cost: $100K
                         funding status: funded
+                        site: LANL
                         type: labor
                         tags:
                           - gpu
@@ -87,6 +88,7 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(tasks[0].bnr, "DP1518130")
         self.assertEqual(tasks[0].cost, "$100K")
         self.assertEqual(tasks[0].funding_status, "funded")
+        self.assertEqual(tasks[0].site, "LANL")
         self.assertEqual(tasks[0].type, "labor")
         self.assertEqual(tasks[0].tags, ("gpu", "restart"))
         self.assertEqual(tasks[1].funding_status, "proposed")
@@ -96,6 +98,42 @@ class PlannerTests(unittest.TestCase):
             tasks[0].risk_mitigation,
             "Close prerequisite questions before build starts.",
         )
+
+    def test_loads_fiscal_range_and_task_funding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    fiscal_range_begin: 27
+                    fiscal_range_end: 29
+                    tasks:
+                      - id: A1
+                        label: A
+                        funding:
+                          fy27: 50K
+                          FY29: 1M
+                        start: M1Q3FY26
+                        deadline: M3Q3FY26
+                        expected_duration: 2
+                        milestone: Design
+                        priority: high
+                        risk_level: low
+                        risk_type: dependency
+                        risk_mitigation: Keep the task small.
+                        status: pending
+                        description: First task.
+                        project: Demo
+                        dependencies: []
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            plan = load_plan(path)
+
+        self.assertEqual(plan.fiscal_years, ("FY27", "FY28", "FY29"))
+        self.assertEqual(plan.tasks[0].funding, {"FY27": "50K", "FY29": "1M"})
 
     def test_loads_yaml_plan_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -906,6 +944,7 @@ class PlannerTests(unittest.TestCase):
                 textwrap.dedent(
                     """
                     task_table_attributes:
+                      - site
                       - funding
                       - tags
                       - funding_status
@@ -919,8 +958,9 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(
             options,
             ExportOptions(
-                task_table_attributes=("funding_status", "tags"),
+                task_table_attributes=("site", "funding_status", "tags"),
                 task_table_columns=(
+                    TaskTableColumn(attribute="site", alignment="center"),
                     TaskTableColumn(attribute="funding_status", alignment="center"),
                     TaskTableColumn(attribute="tags", alignment="center"),
                 ),
@@ -934,6 +974,7 @@ class PlannerTests(unittest.TestCase):
                 textwrap.dedent(
                     """
                     task_table_attributes:
+                      - site: Site
                       - bnr: BNR
                       - funding:
                           label: Status
@@ -949,8 +990,9 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(
             options,
             ExportOptions(
-                task_table_attributes=("bnr", "funding_status", "tags"),
+                task_table_attributes=("site", "bnr", "funding_status", "tags"),
                 task_table_columns=(
+                    TaskTableColumn(attribute="site", label="Site", alignment="center"),
                     TaskTableColumn(attribute="bnr", label="BNR", alignment="center"),
                     TaskTableColumn(
                         attribute="funding_status",
@@ -974,6 +1016,7 @@ class PlannerTests(unittest.TestCase):
                         bnr: DP1518130
                         cost: $100K
                         funding_status: funded
+                        site: LANL
                         type: labor
                         tags: checkpoint, restart
                         start: M1Q3FY26
@@ -1318,6 +1361,8 @@ class PlannerTests(unittest.TestCase):
                     pocs:
                       - Casey
                       - Drew
+                    fiscal_range_begin: 27
+                    fiscal_range_end: 29
                     summary: >
                       Document-level planning context.
                     execution:
@@ -1333,6 +1378,10 @@ class PlannerTests(unittest.TestCase):
                         bnr: DP1518130
                         cost: $100K
                         funding_status: funded
+                        funding:
+                          fy27: 50K
+                          fy29: 1M
+                        site: LANL
                         type: labor
                         tags: checkpoint, restart
                         start: M1Q3FY26
@@ -1386,6 +1435,12 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Casey", document)
         self.assertIn("Drew", document)
         self.assertIn("Document-level planning context.", document)
+        self.assertIn("Fiscal Years", document)
+        self.assertIn("FY27, FY28, FY29", document)
+        self.assertIn("Funding Totals", document)
+        self.assertIn("FY27: 50K", document)
+        self.assertIn("FY28: 0K", document)
+        self.assertIn("FY29: 1000K", document)
         self.assertIn("Execution", document)
         self.assertIn("Document execution overview.", document)
         self.assertIn("Deliverable A", document)
@@ -1397,12 +1452,19 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Task A.1", document)
         self.assertIn("Task B.1", document)
         self.assertNotIn("LONG_IDENTIFIER_FOR_TABLE", document)
+        self.assertIn("Site", document)
+        self.assertIn("LANL", document)
         self.assertIn("BNR", document)
         self.assertIn("DP1518130", document)
         self.assertIn("Cost", document)
         self.assertIn("$100K", document)
         self.assertIn("Funding", document)
         self.assertIn("funded", document)
+        self.assertIn('<w:t xml:space="preserve">FY27</w:t>', document)
+        self.assertIn('<w:t xml:space="preserve">FY28</w:t>', document)
+        self.assertIn('<w:t xml:space="preserve">FY29</w:t>', document)
+        self.assertIn('<w:t xml:space="preserve">50K</w:t>', document)
+        self.assertIn('<w:t xml:space="preserve">1M</w:t>', document)
         self.assertIn("Type", document)
         self.assertIn("labor", document)
         self.assertNotIn("Tags", document)
@@ -1531,6 +1593,7 @@ class PlannerTests(unittest.TestCase):
                         bnr: DP1518130
                         cost: $100K
                         funding_status: funded
+                        site: LANL
                         type: labor
                         start: M2Q3FY26
                         deadline: M3Q3FY26
@@ -1559,7 +1622,10 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Portfolio A", svg)
         self.assertIn("M1Q3FY26 to M3Q3FY26", svg)
         self.assertIn("duration 1 month(s)", svg)
-        self.assertIn("BNR: DP1518130; Cost: $100K; Funding: funded; Type: labor", svg)
+        self.assertIn(
+            "Site: LANL; BNR: DP1518130; Cost: $100K; Funding: funded; Type: labor",
+            svg,
+        )
         self.assertIn("risk high/delivery", svg)
         self.assertIn("marker-end=\"url(#arrow)\"", svg)
         self.assertIn("id B2", svg)

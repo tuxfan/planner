@@ -1,6 +1,13 @@
+fiscal_range_begin: 27
+fiscal_range_end: 29
+
 tasks:
   - id: DraftArchitecture
     label: Draft architecture
+    site: LANL
+    funding:
+      fy27: 50K
+      fy28: 50K
     start: M1Q3FY26
     deadline: M2Q3FY26
     expected duration: 2
@@ -16,6 +23,7 @@ tasks:
 
   - id: DefineTaskSchema
     label: Define task schema
+    site: LANL
     start: M2Q3FY26
     deadline: M2Q3FY26
     expected_duration: 1
@@ -32,6 +40,9 @@ tasks:
 
   - id: BuildLoader
     label: Build loader
+    site: LANL
+    funding:
+      fy29: 100K
     start: M2Q3FY26
     deadline: M2Q3FY26
     expected_duration: 1
@@ -48,6 +59,7 @@ tasks:
 
   - id: AddCLI
     label: Add CLI
+    site: LANL
     start: M2Q3FY26
     deadline: M2Q3FY26
     expected_duration: 1
@@ -64,6 +76,7 @@ tasks:
 
   - id: AddScheduleView
     label: Add schedule view
+    site: LANL
     start: M2Q3FY26
     deadline: M2Q3FY26
     expected_duration: 1

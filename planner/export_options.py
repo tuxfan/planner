@@ -8,12 +8,13 @@ import yaml
 
 from .models import ValidationError
 
-DEFAULT_TASK_TABLE_ATTRIBUTES = ("bnr", "cost", "funding_status", "type")
+DEFAULT_TASK_TABLE_ATTRIBUTES = ("site", "bnr", "cost", "funding_status", "type")
 TASK_TABLE_ATTRIBUTE_ALIASES = {
     "bnr": "bnr",
     "cost": "cost",
     "funding": "funding_status",
     "funding_status": "funding_status",
+    "site": "site",
     "type": "type",
     "tags": "tags",
 }

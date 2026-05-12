@@ -1,4 +1,6 @@
 task_table_columns:
+  - attribute: site
+    label: Site
   - attribute: bnr
     label: BNR
   - attribute: cost
