@@ -358,6 +358,11 @@ def _print_tasks(tasks) -> None:
         if metadata:
             print(f"  attributes: {metadata}")
         for risk in task.risks:
+            if risk.description:
+                print(
+                    f"  risk description ({risk.type}/{risk.level}): "
+                    f"{risk.description}"
+                )
             print(f"  mitigation ({risk.type}/{risk.level}): {risk.mitigation}")
         print(f"  dependencies (ids): {dependencies}")
         print(f"  description: {task.description}")
@@ -399,6 +404,11 @@ def _print_schedule(tasks) -> None:
             print(f"  attributes: {metadata}")
         print(f"  risk: {_task_risk_summary(task)}")
         for risk in task.risks:
+            if risk.description:
+                print(
+                    f"  risk description ({risk.type}/{risk.level}): "
+                    f"{risk.description}"
+                )
             print(f"  mitigation ({risk.type}/{risk.level}): {risk.mitigation}")
         print(f"  dependencies (ids): {dependencies}")
 
@@ -409,6 +419,8 @@ def _task_risk_summary(task) -> str:
 
 def _task_metadata(task) -> str:
     parts = []
+    if task.completed:
+        parts.append(f"completed={task.completed}")
     if task.site:
         parts.append(f"site={task.site}")
     if task.bnr:

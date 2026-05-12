@@ -45,16 +45,18 @@ Each task includes:
 - `funding`: mapping of fiscal year label to funding level, e.g. `fy27: 50K`; missing fiscal years are treated as unfunded for that task
 - `site`: site or institution label
 - `start`, `deadline`
+- `completed`: completion fiscal period for already-complete tasks; complete tasks with this field may omit planning-only fields
 - `expected_duration`
 - `milestone`, `priority`
 - `status`, `description`, `project`
 - `dependencies`
-- `risk`: entry or list of entries with `type`, `level`, and `mitigation`
+- `risk`: entry or list of entries with `type`, `level`, `mitigation`, and optional `description`
 
 Accepted aliases currently handled in code:
 
 - `bnr` -> `bnr`
 - `cost` -> `cost`
+- `completed` -> `completed`
 - `start` -> `start`
 - `start month` -> `start`
 - `deadline` -> `deadline`
@@ -70,11 +72,12 @@ Accepted aliases currently handled in code:
 Validation rules currently enforced:
 
 - required fields must all be present
+- tasks with `status: complete` and `completed` may omit `start`, `deadline`, `expected_duration`, `milestone`, `priority`, `dependencies`, and `risk`; omitted start/deadline are set to the completed fiscal period for sorting
 - task ids must match `^[A-Za-z0-9_]+$`
 - `dependencies` must be a list
 - `start` and `deadline` must use fiscal period values like `M1Q1FY26`
 - `expected_duration` must be a positive integer
-- `risk` must be a non-empty mapping or list of mappings with `type`, `level`, and `mitigation`
+- `risk` must be a non-empty mapping or list of mappings with `type`, `level`, `mitigation`, and optional `description`
 - risk `level` must be one of `low`, `medium`, `high`, `extreme`
 - `start` cannot be after `deadline` in fiscal period order
 - `status` must be one of `pending`, `active`, `ongoing`, `blocked`, `complete`
@@ -175,3 +178,5 @@ Validation rules currently enforced:
 - Added Sphinx documentation under `docs/`, including quick start, schema, CLI, export option, and Python API pages.
 - Added a `docs` optional dependency extra for `Sphinx>=7.2` and README instructions for building HTML documentation.
 - Added a GitHub Actions documentation workflow that builds Sphinx HTML and publishes it to the `gh-pages` branch for GitHub Pages, with a `.nojekyll` marker for Sphinx static assets.
+- Added support for optional risk `description` text on each risk entry, including model normalization, CLI display, `.docx` risk mitigation rendering, schema documentation, and test coverage.
+- Added support for compact completed tasks using `completed`; complete tasks can omit planning-only fields while still sorting at the completed fiscal period and remaining available as dependencies.

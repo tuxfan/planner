@@ -23,10 +23,20 @@ REQUIRED_FIELDS = {
     "project",
     "dependencies",
 }
+COMPLETED_TASK_OPTIONAL_FIELDS = {
+    "start",
+    "deadline",
+    "expected_duration",
+    "milestone",
+    "priority",
+    "risk",
+    "dependencies",
+}
 
 FIELD_ALIASES = {
     "bnr": "bnr",
     "cost": "cost",
+    "completed": "completed",
     "start": "start",
     "start month": "start",
     "deadline": "deadline",
@@ -58,6 +68,7 @@ class Risk:
     type: str
     level: str
     mitigation: str
+    description: str = ""
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, object], *, label: str, index: int) -> "Risk":
@@ -76,6 +87,7 @@ class Risk:
         risk_type = str(raw["type"]).strip()
         risk_level = str(raw["level"]).strip().lower()
         risk_mitigation = str(raw["mitigation"]).strip()
+        risk_description = str(raw.get("description", "")).strip()
         if not risk_type:
             raise ValidationError(f"Task '{label}' risk item #{index} has empty type.")
         if risk_level not in ALLOWED_RISK_LEVELS:
@@ -88,7 +100,12 @@ class Risk:
                 f"Task '{label}' risk item #{index} has empty mitigation."
             )
 
-        return cls(type=risk_type, level=risk_level, mitigation=risk_mitigation)
+        return cls(
+            type=risk_type,
+            level=risk_level,
+            mitigation=risk_mitigation,
+            description=risk_description,
+        )
 
 
 @dataclass(frozen=True)
@@ -105,6 +122,7 @@ class Task:
     description: str
     project: str
     dependencies: tuple[str, ...]
+    completed: str = ""
     bnr: str = ""
     cost: str = ""
     funding_status: str = ""
@@ -127,7 +145,27 @@ class Task:
             canonical = FIELD_ALIASES.get(key, key)
             normalized[canonical] = value
 
-        missing = REQUIRED_FIELDS - normalized.keys()
+        if "status" not in normalized and "completed" in normalized:
+            normalized["status"] = "complete"
+
+        status = str(normalized.get("status", "")).strip().lower()
+        completed = ""
+        if "completed" in normalized:
+            label_for_error = str(
+                normalized.get("label", normalized.get("id", index or "?"))
+            ).strip()
+            completed = _parse_fiscal_period(
+                normalized["completed"],
+                field_name="completed",
+                label=label_for_error,
+            )
+
+        is_completed_marker = status == "complete" and bool(completed)
+        required_fields = REQUIRED_FIELDS
+        if is_completed_marker:
+            required_fields = REQUIRED_FIELDS - COMPLETED_TASK_OPTIONAL_FIELDS
+
+        missing = required_fields - normalized.keys()
         if missing:
             raise ValidationError(
                 f"Task '{normalized.get('label', normalized.get('id', index or '?'))}' is missing fields: "
@@ -136,7 +174,7 @@ class Task:
 
         task_id = str(normalized["id"]).strip()
         label = str(normalized["label"]).strip()
-        dependencies = normalized["dependencies"]
+        dependencies = normalized.get("dependencies", [])
         if not isinstance(dependencies, list):
             raise ValidationError(
                 f"Task '{label}' has invalid dependencies; expected a list."
@@ -146,20 +184,29 @@ class Task:
                 f"Task '{label}' has invalid id '{normalized['id']}'. Use only letters, numbers, and underscores with no spaces."
             )
 
-        start = _parse_fiscal_period(
-            normalized["start"], field_name="start", label=label
-        )
-        deadline = _parse_fiscal_period(
-            normalized["deadline"], field_name="deadline", label=label
-        )
+        if "start" in normalized:
+            start = _parse_fiscal_period(
+                normalized["start"], field_name="start", label=label
+            )
+        else:
+            start = completed
+        if "deadline" in normalized:
+            deadline = _parse_fiscal_period(
+                normalized["deadline"], field_name="deadline", label=label
+            )
+        else:
+            deadline = completed
 
-        try:
-            expected_duration = int(normalized["expected_duration"])
-        except (TypeError, ValueError) as exc:
-            raise ValidationError(
-                f"Task '{label}' has invalid expected_duration "
-                f"'{normalized['expected_duration']}'. Use a whole number of months."
-            ) from exc
+        if "expected_duration" in normalized:
+            try:
+                expected_duration = int(normalized["expected_duration"])
+            except (TypeError, ValueError) as exc:
+                raise ValidationError(
+                    f"Task '{label}' has invalid expected_duration "
+                    f"'{normalized['expected_duration']}'. Use a whole number of months."
+                ) from exc
+        else:
+            expected_duration = 1
 
         if expected_duration <= 0:
             raise ValidationError(
@@ -170,16 +217,15 @@ class Task:
         if _fiscal_period_sort_key(start) > _fiscal_period_sort_key(deadline):
             raise ValidationError(f"Task '{label}' has start after deadline.")
 
-        priority = str(normalized["priority"]).strip().lower()
+        priority = str(normalized.get("priority", "low")).strip().lower()
         if priority not in ALLOWED_PRIORITIES:
             raise ValidationError(
                 f"Task '{label}' has invalid priority '{normalized['priority']}'. "
                 "Use low, medium, high, or urgent."
             )
 
-        risks = _coerce_task_risks(normalized, label)
+        risks = _coerce_task_risks(normalized, label, allow_missing=is_completed_marker)
 
-        status = str(normalized["status"]).strip().lower()
         if status not in ALLOWED_STATUSES:
             raise ValidationError(
                 f"Task '{label}' has invalid status '{normalized['status']}'. "
@@ -193,13 +239,14 @@ class Task:
             start=start,
             deadline=deadline,
             expected_duration=expected_duration,
-            milestone=str(normalized["milestone"]).strip(),
+            milestone=str(normalized.get("milestone", "Completed")).strip(),
             priority=priority,
             risks=risks,
             status=status,
             description=str(normalized["description"]).strip(),
             project=str(normalized["project"]).strip(),
             dependencies=tuple(str(item).strip() for item in dependencies),
+            completed=completed,
             bnr=_coerce_optional_task_text(normalized, "bnr"),
             cost=_coerce_optional_task_text(normalized, "cost"),
             funding_status=_coerce_optional_task_text(normalized, "funding_status"),
@@ -303,12 +350,21 @@ def _coerce_optional_task_tags(raw: Mapping[str, object]) -> tuple[str, ...]:
     return tuple(str(item).strip() for item in value if str(item).strip())
 
 
-def _coerce_task_risks(raw: Mapping[str, object], label: str) -> tuple[Risk, ...]:
+def _coerce_task_risks(
+    raw: Mapping[str, object], label: str, *, allow_missing: bool = False
+) -> tuple[Risk, ...]:
+    if "risk" not in raw:
+        if allow_missing:
+            return ()
+        raise ValidationError(f"Task '{label}' is missing fields: risk")
+
     value = raw["risk"]
     if isinstance(value, Mapping):
         return (Risk.from_mapping(value, label=label, index=1),)
     if isinstance(value, list):
         if not value:
+            if allow_missing:
+                return ()
             raise ValidationError(f"Task '{label}' field 'risk' cannot be empty.")
         return tuple(
             Risk.from_mapping(item, label=label, index=index)

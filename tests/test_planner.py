@@ -134,6 +134,8 @@ class PlannerTests(unittest.TestCase):
                       risk:
                         - type: technical
                           level: low
+                          description: >
+                            Visualization requirements may change during integration.
                           mitigation: >
                             Work with viz team.
                         - type: schedule
@@ -156,6 +158,10 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual([task.id for task in tasks], ["VTK"])
         self.assertEqual(tasks[0].risks[0].type, "technical")
         self.assertEqual(tasks[0].risks[0].level, "low")
+        self.assertEqual(
+            tasks[0].risks[0].description,
+            "Visualization requirements may change during integration.",
+        )
         self.assertEqual(tasks[0].risks[0].mitigation, "Work with viz team.")
         self.assertEqual(tasks[0].risks[1].type, "schedule")
         self.assertEqual(tasks[0].risks[1].level, "medium")
@@ -163,6 +169,55 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(tasks[0].risks[0].type, "technical")
         self.assertEqual(tasks[0].risks[0].level, "low")
         self.assertEqual(tasks[0].funding["FY31"], "3000K")
+
+    def test_complete_task_can_use_completed_period_without_planning_fields(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "tasks.yaml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    - id: DONE
+                      label: Finished Setup
+                      project: Demo
+                      description: Work completed before the active plan.
+                      status: complete
+                      completed: M3Q2FY26
+                    - id: NEXT
+                      label: Next Work
+                      project: Demo
+                      description: Work that depends on completed setup.
+                      start: M1Q3FY26
+                      deadline: M2Q3FY26
+                      expected_duration: 2
+                      milestone: Delivery
+                      priority: medium
+                      status: pending
+                      dependencies:
+                        - DONE
+                      risk:
+                        - type: delivery
+                          level: low
+                          mitigation: Keep the next task small.
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            tasks = load_tasks(path)
+
+        completed = tasks[0]
+        self.assertEqual(completed.id, "DONE")
+        self.assertEqual(completed.status, "complete")
+        self.assertEqual(completed.completed, "M3Q2FY26")
+        self.assertEqual(completed.start, "M3Q2FY26")
+        self.assertEqual(completed.deadline, "M3Q2FY26")
+        self.assertEqual(completed.expected_duration, 1)
+        self.assertEqual(completed.milestone, "Completed")
+        self.assertEqual(completed.priority, "low")
+        self.assertEqual(completed.dependencies, ())
+        self.assertEqual(completed.risks, ())
 
     def test_loads_fiscal_range_and_task_funding(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

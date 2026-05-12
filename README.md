@@ -26,12 +26,13 @@ Each task supports these fields:
 - `description`: required string describing the task.
 - `start`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
 - `deadline`: required fiscal period string in `M{month}Q{quarter}FY{year}` format, where `month` is `1` to `3` within the quarter.
+- `completed`: optional fiscal period string for work that is already complete. A task with `status: complete` and `completed` may omit planning-only fields: `start`, `deadline`, `expected duration`, `milestone`, `priority`, `dependencies`, and `risk`.
 - `expected duration` or `expected_duration`: required positive whole number of months.
 - `milestone`: required string milestone name.
 - `priority`: required string priority label such as `low`, `medium`, `high`, or `urgent`.
 - `status`: required string status. Allowed values are `pending`, `active`, `ongoing`, `blocked`, and `complete`.
 - `dependencies`: required list of task ids. Each dependency must reference another task `id`.
-- `risk`: required risk entry or list of risk entries. Each entry has `type`, `level`, and `mitigation`; `level` must be `low`, `medium`, `high`, or `extreme`.
+- `risk`: required risk entry or list of risk entries. Each entry has `type`, `level`, and `mitigation`, and may include `description`; `level` must be `low`, `medium`, `high`, or `extreme`.
 - `funding`: optional mapping of fiscal year to funding level, for example `fy27: 50K`. A task is treated as unfunded for fiscal years not present in this mapping.
 
 A task can also be a multi-part task by using `parts` instead of the per-task
@@ -162,6 +163,7 @@ tasks:
     risk:
       - type: scope
         level: medium
+        description: Integration requirements may change during implementation.
         mitigation: Review the architecture with stakeholders before implementation starts.
     funding:
       fy27: 50K

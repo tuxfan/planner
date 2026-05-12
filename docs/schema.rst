@@ -38,6 +38,9 @@ Task Fields
 
 Each task requires ``id``, ``label``, ``project``, ``description``, ``start``,
 ``deadline``, ``expected_duration``, ``milestone``, ``priority``, ``status``,
+``dependencies``, and ``risk``. A task with ``status: complete`` and a
+``completed`` fiscal period may omit the planning-only fields ``start``,
+``deadline``, ``expected_duration``, ``milestone``, ``priority``,
 ``dependencies``, and ``risk``.
 
 Optional task fields include ``site``, ``bnr``, ``cost``, ``funding_status``,
@@ -56,13 +59,18 @@ Optional task fields include ``site``, ``bnr``, ``cost``, ``funding_status``,
 ``status``
    One of ``pending``, ``active``, ``ongoing``, ``blocked``, or ``complete``.
 
+``completed``
+   Optional fiscal period for already-completed work. When present on a
+   complete task, it is used as the task's schedule position if ``start`` or
+   ``deadline`` are omitted.
+
 ``dependencies``
    List of task ids. Every dependency must reference an existing task.
 
 ``risk``
    A mapping or list of mappings. Each risk entry must include ``type``,
-   ``level``, and ``mitigation``. Risk levels are ``low``, ``medium``, ``high``,
-   and ``extreme``.
+   ``level``, and ``mitigation``, and may include ``description``. Risk levels
+   are ``low``, ``medium``, ``high``, and ``extreme``.
 
 ``funding``
    Mapping of fiscal year labels to funding levels. Missing fiscal years are

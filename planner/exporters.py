@@ -399,10 +399,13 @@ def _risk_mitigation_paragraphs(
     paragraphs = []
     for task in tasks:
         for risk in task.risks:
+            text = risk.mitigation
+            if risk.description:
+                text = f"{risk.description} Mitigation: {risk.mitigation}"
             paragraphs.append(
                 _labeled_paragraph(
                     f"{task_numbers[task.id]} {risk.type}/{risk.level}",
-                    risk.mitigation,
+                    text,
                 )
             )
     return paragraphs
